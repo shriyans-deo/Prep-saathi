@@ -60,19 +60,19 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex md:flex-col md:w-64 h-screen sticky top-0 bg-navy text-white flex-shrink-0 z-30 select-none border-r border-navy/40 shadow-sm">
-      {/* Brand & Sync indicator (§6) */}
-      <div className="p-5 pb-3">
+    <aside className="hidden md:flex md:flex-col md:w-68 h-screen sticky top-0 bg-[#0B1F3A] text-white flex-shrink-0 z-30 select-none border-r border-slate-800 shadow-xl">
+      {/* Brand & Sync indicator */}
+      <div className="p-6 pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-lg bg-blue flex items-center justify-center font-bold text-sm text-white shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue to-sky-400 flex items-center justify-center font-extrabold text-base text-white shadow-md shadow-blue/30">
               PS
             </span>
             <div className="flex flex-col">
-              <span className="text-lg font-extrabold tracking-tight text-white leading-none">
+              <span className="text-xl font-black tracking-tight text-white leading-none">
                 PrepSaathi
               </span>
-              <span className="text-[10px] text-sky font-semibold tracking-wide uppercase mt-0.5">
+              <span className="text-[11px] text-sky font-bold tracking-wider uppercase mt-1">
                 Execution Partner
               </span>
             </div>
@@ -80,42 +80,47 @@ export default function Sidebar() {
 
           {/* Sync status indicator */}
           <div
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-semibold text-emerald-400"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-bold text-emerald-300 shadow-xs"
             title="Real-time synchronization active"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Synced</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
+            <span>Live</span>
           </div>
         </div>
 
-        {/* User Identity & Exam Pill */}
+        {/* User Identity & Exam Card */}
         {profile && (
-          <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+          <div className="mt-5 p-4 rounded-2xl bg-white/10 border border-white/15 space-y-3 backdrop-blur-md shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-white truncate max-w-[130px]">
-                {profile.name}
-              </span>
-              <span className="text-[10px] bg-blue/30 text-sky px-2 py-0.5 rounded-md font-mono font-semibold tracking-wider">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center font-bold text-xs text-sky-200">
+                  {profile.name.charAt(0)}
+                </span>
+                <span className="text-sm font-bold text-white truncate max-w-[130px]">
+                  {profile.name}
+                </span>
+              </div>
+              <span className="text-xs bg-blue text-white px-2.5 py-0.5 rounded-lg font-mono font-bold shadow-xs">
                 {profile.exam || 'Aspirant'}
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
-              <span className="flex items-center gap-1 text-orange font-bold">
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-xs">
+              <div className="flex items-center gap-1.5 bg-orange/20 border border-orange/30 px-2.5 py-1 rounded-xl text-orange-300 font-bold">
                 <FlameIcon size={14} className="text-orange" />
-                <NumberTicker value={profile.streak_count} suffix="d streak" className="text-orange font-bold text-xs" />
-              </span>
-              <span className="flex items-center gap-1 text-sky font-bold">
+                <NumberTicker value={profile.streak_count} suffix="d streak" className="text-orange-300 font-bold text-xs" />
+              </div>
+              <div className="flex items-center gap-1.5 bg-sky-400/20 border border-sky-400/30 px-2.5 py-1 rounded-xl text-sky-200 font-bold">
                 <StarIcon size={14} className="text-sky" />
-                <NumberTicker value={profile.total_points} suffix=" pts" className="text-sky font-bold text-xs" />
-              </span>
+                <NumberTicker value={profile.total_points} suffix=" pts" className="text-sky-200 font-bold text-xs" />
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* The 7 Navigation Items with Animated Active Pill */}
-      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+      {/* The 7 Navigation Items in exact specified order */}
+      <nav className="flex-1 px-4 py-3 space-y-1.5 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
@@ -124,21 +129,21 @@ export default function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
-              className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors ${
+              className={`relative flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all ${
                 isActive
-                  ? 'text-white font-bold'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  ? 'text-white font-bold shadow-md shadow-blue/25'
+                  : 'text-slate-300 hover:text-white hover:bg-white/8'
               }`}
             >
               {isActive && (
                 <motion.span
                   layoutId="sidebarActivePill"
-                  className="absolute inset-0 bg-blue rounded-xl z-0 shadow-xs"
+                  className="absolute inset-0 bg-gradient-to-r from-blue to-blue-600 rounded-xl z-0"
                   transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                 />
               )}
-              <span className="relative z-10 flex items-center gap-3">
-                <Icon size={18} className="flex-shrink-0" />
+              <span className="relative z-10 flex items-center gap-3.5">
+                <Icon size={20} className={isActive ? 'text-white' : 'text-slate-400'} />
                 <span>{item.label}</span>
               </span>
             </NavLink>
@@ -146,55 +151,55 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer Controls: WhatsApp Delivery Channel link, Lite Mode, Hindi, Sign Out */}
-      <div className="p-4 border-t border-white/10 space-y-3 bg-navy/60">
-        {/* WhatsApp Delivery Channel (Accessible without violating the 7-item nav constraint) */}
+      {/* Footer Controls */}
+      <div className="p-4 border-t border-white/10 space-y-3 bg-[#071527]/90">
+        {/* WhatsApp Delivery Channel */}
         <Link
           to="/whatsapp"
-          className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-xs font-medium transition"
+          className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition shadow-xs"
         >
           <div className="flex items-center gap-2">
-            <MessageSquareIcon size={14} className="text-emerald-400" />
+            <MessageSquareIcon size={15} className="text-emerald-400" />
             <span>WhatsApp Delivery Mock</span>
           </div>
-          <span className="text-[10px] opacity-75 font-mono">Tier 2-3 →</span>
+          <span className="text-[10px] text-emerald-400 font-mono font-bold">Tier 2-3 →</span>
         </Link>
 
-        {/* Lite Mode Toggle (§1, §6) */}
-        <div className="flex items-center justify-between text-xs text-slate-300 px-1">
-          <span className="text-[11px] font-medium">Lite Mode (Low Bandwidth)</span>
+        {/* Lite Mode Toggle */}
+        <div className="flex items-center justify-between text-xs text-slate-300 px-1.5">
+          <span className="text-xs font-medium">Lite Mode (Low Bandwidth)</span>
           <button
             type="button"
             onClick={toggleLiteMode}
-            className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${
+            className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
               liteMode ? 'bg-blue' : 'bg-white/20'
             }`}
             title="Lite mode drops charts to numbers to conserve data"
           >
             <span
-              className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-xs ${
                 liteMode ? 'translate-x-4' : 'translate-x-0'
               }`}
             />
           </button>
         </div>
 
-        {/* Hindi Toggle (§6) */}
-        <div className="flex items-center justify-between text-xs text-slate-300 px-1">
-          <span className="text-[11px] font-medium">Language / भाषा</span>
-          <div className="flex rounded-lg bg-white/10 p-0.5 text-[10px] font-bold">
+        {/* Language Toggle */}
+        <div className="flex items-center justify-between text-xs text-slate-300 px-1.5">
+          <span className="text-xs font-medium">Language / भाषा</span>
+          <div className="flex rounded-lg bg-white/10 p-0.5 text-xs font-bold">
             <button
               onClick={() => setLang('en')}
-              className={`px-2 py-0.5 rounded transition ${
-                lang === 'en' ? 'bg-blue text-white' : 'text-slate-300 hover:text-white'
+              className={`px-2.5 py-0.5 rounded-md transition ${
+                lang === 'en' ? 'bg-blue text-white shadow-xs' : 'text-slate-300 hover:text-white'
               }`}
             >
               EN
             </button>
             <button
               onClick={() => setLang('hi')}
-              className={`px-2 py-0.5 rounded transition ${
-                lang === 'hi' ? 'bg-blue text-white' : 'text-slate-300 hover:text-white'
+              className={`px-2.5 py-0.5 rounded-md transition ${
+                lang === 'hi' ? 'bg-blue text-white shadow-xs' : 'text-slate-300 hover:text-white'
               }`}
             >
               हिन्दी
@@ -205,9 +210,9 @@ export default function Sidebar() {
         {/* Sign Out */}
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs text-slate-400 hover:text-white hover:bg-white/10 transition font-medium cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs text-slate-400 hover:text-white hover:bg-white/10 transition font-medium cursor-pointer"
         >
-          <LogOutIcon size={14} />
+          <LogOutIcon size={15} />
           <span>Sign Out</span>
         </button>
       </div>

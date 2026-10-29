@@ -88,14 +88,12 @@ export default function PlanPage() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regenerateNotice, setRegenerateNotice] = useState<string | null>(null);
 
-  // Active Study Session State
   const [activeTaskIndex, setActiveTaskIndex] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
   const [sessionNotes, setSessionNotes] = useState<string>('');
   const [completedSuccessMsg, setCompletedSuccessMsg] = useState<string | null>(null);
 
-  // Load cached plan from Supabase
   useEffect(() => {
     const loadCachedPlan = async () => {
       const today = new Date().toISOString().split('T')[0];
@@ -123,7 +121,6 @@ export default function PlanPage() {
     loadCachedPlan();
   }, [currentProfile.id, isDemoUser]);
 
-  // Check URL query param to automatically open study session if requested
   useEffect(() => {
     const startIndex = searchParams.get('start');
     if (startIndex !== null) {
@@ -134,7 +131,6 @@ export default function PlanPage() {
     }
   }, [searchParams, tasks.length]);
 
-  // Study Session Timer ticker
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     if (isTimerRunning && secondsRemaining > 0) {
@@ -163,7 +159,6 @@ export default function PlanPage() {
     setIsTimerRunning(false);
   };
 
-  // Completing a task writes study_logs, increments completed_count, and nudges mastery
   const handleCompleteTask = async () => {
     if (activeTaskIndex === null) return;
     const task = tasks[activeTaskIndex];
@@ -176,13 +171,11 @@ export default function PlanPage() {
     };
     setTasks(updatedTasks);
 
-    // Trigger celebration confetti
     triggerAcademicConfetti({ particleCount: 50, spread: 65 });
 
     const completedCount = updatedTasks.filter((t) => t.completed).length;
     const today = new Date().toISOString().split('T')[0];
 
-    // Write back to Supabase
     try {
       if (!isDemoUser && currentProfile.id) {
         await supabase.from('daily_plans').upsert({
@@ -227,7 +220,6 @@ export default function PlanPage() {
     }, 1500);
   };
 
-  // Regenerate Plan
   const handleRegeneratePlan = async () => {
     setIsRegenerating(true);
     setRegenerateNotice(null);
@@ -302,10 +294,10 @@ export default function PlanPage() {
     <div className="space-y-8">
       {/* Header with Regenerate Action */}
       <BlurFade delay={0.05}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/90">
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-navy tracking-tight">
                 Today's Execution Workspace
               </h1>
               <Badge variant="primary">
@@ -318,19 +310,19 @@ export default function PlanPage() {
             </p>
           </div>
 
-          <div className="flex flex-col items-start sm:items-end gap-1 flex-shrink-0">
+          <div className="flex flex-col items-start sm:items-end gap-1.5 flex-shrink-0">
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               type="button"
               onClick={handleRegeneratePlan}
               disabled={isRegenerating}
-              className="px-4 py-2.5 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs shadow-xs transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="px-5 py-3 rounded-2xl bg-[#0B1F3A] hover:bg-[#162E52] text-white font-bold text-xs shadow-md shadow-navy/20 transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
-              <RefreshCwIcon size={14} className={isRegenerating ? 'animate-spin' : ''} />
-              <span>{isRegenerating ? 'Analyzing Mastery...' : 'Regenerate Plan'}</span>
+              <RefreshCwIcon size={14} className={isRegenerating ? 'animate-spin text-sky' : ''} />
+              <span>{isRegenerating ? 'Analyzing Mastery...' : 'Regenerate Plan with Groq AI'}</span>
             </motion.button>
-            <span className="text-[11px] text-slate-400 italic">
+            <span className="text-[11px] text-slate-400 italic font-medium">
               uses yesterday's completion
             </span>
           </div>
@@ -341,48 +333,48 @@ export default function PlanPage() {
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-blue/5 border border-blue/20 text-xs text-blue-950 flex items-start gap-2.5 shadow-2xs"
+          className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-xs text-blue-950 flex items-start gap-3 shadow-xs"
         >
-          <SparklesIcon size={16} className="text-blue flex-shrink-0 mt-0.5" />
-          <div>
-            <strong>Adaptive Feedback Loop:</strong> {regenerateNotice}
+          <SparklesIcon size={18} className="text-blue flex-shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <strong className="font-extrabold text-blue">Adaptive Feedback Loop:</strong> {regenerateNotice}
           </div>
         </motion.div>
       )}
 
-      {/* Focus Note Card with DecryptedText */}
+      {/* Focus Note Card */}
       <BlurFade delay={0.1}>
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-blue/10 flex items-center justify-center text-blue flex-shrink-0">
-            <SparklesIcon size={18} className="text-blue" />
+        <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-blue/15 border border-blue/20 flex items-center justify-center text-blue flex-shrink-0">
+            <SparklesIcon size={22} className="text-blue" />
           </div>
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-blue block">
+          <div className="space-y-1">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-blue block">
               Today's Primary Focus Note
             </span>
-            <p className="text-sm font-semibold text-navy mt-1 leading-relaxed">
-              <DecryptedText text={focusNote} speed={30} className="font-semibold text-navy" />
+            <p className="text-base font-bold text-navy leading-relaxed">
+              <DecryptedText text={focusNote} speed={30} className="font-bold text-navy" />
             </p>
           </div>
         </div>
       </BlurFade>
 
-      {/* Task List Workspace using SpotlightCard */}
-      <div className="space-y-4">
+      {/* Task List Workspace */}
+      <div className="space-y-5">
         {tasks.map((task, idx) => (
           <BlurFade key={idx} delay={0.15 + idx * 0.05}>
             <SpotlightCard
               spotlightColor="rgba(37, 99, 235, 0.08)"
-              className={`p-5 sm:p-6 transition-all ${
+              className={`p-6 sm:p-7 rounded-3xl border transition-all shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-xl hover:border-blue-400 ${
                 task.completed
-                  ? 'border-emerald-200 bg-emerald-50/20'
-                  : 'border-slate-200/80 bg-white hover:border-blue/40 shadow-xs'
+                  ? 'border-emerald-300 bg-emerald-50/20'
+                  : 'border-slate-200/90 bg-white'
               }`}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-2 flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                <div className="space-y-2.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
                       {task.subject}
                     </span>
                     <Badge
@@ -395,50 +387,50 @@ export default function PlanPage() {
                       }
                     >
                       {task.type === 'weak_topic'
-                        ? 'Weak Topic'
+                        ? '#1 Weakest Area'
                         : task.type === 'learning'
                         ? 'Reinforcement'
                         : 'Revision'}
                     </Badge>
-                    <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md font-semibold">
+                    <span className="text-xs font-mono bg-slate-100 border border-slate-200 text-slate-700 px-3 py-0.5 rounded-lg font-bold">
                       Mastery: {task.masteryScore}%
                     </span>
                     {task.completed && (
-                      <span className="text-[11px] font-bold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                        <CheckIcon size={11} />
+                      <span className="text-xs font-extrabold bg-emerald-600 text-white px-3 py-0.5 rounded-full inline-flex items-center gap-1.5 shadow-xs">
+                        <CheckIcon size={12} />
                         <span>Completed</span>
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-base sm:text-lg font-bold text-navy">{task.topic}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{task.task}</p>
+                  <h3 className="text-lg sm:text-xl font-black text-navy">{task.topic}</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed font-normal">{task.task}</p>
 
-                  <div className="p-3 rounded-xl bg-blue/5 border border-blue/15 text-xs text-blue-950 mt-2 font-medium">
-                    <strong>Why assigned:</strong> {task.why}
+                  <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200/70 text-xs text-blue-950 font-medium">
+                    🎯 <strong>AI Rationale:</strong> {task.why}
                   </div>
                 </div>
 
                 {/* Action and Duration Column */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3.5 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
-                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-xs">
                     <ClockIcon size={14} className="text-slate-500" />
                     <span>{task.minutes} min</span>
                   </div>
 
                   <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
                     type="button"
                     onClick={() => openStudySession(idx)}
-                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer ${
+                    className={`px-6 py-3 rounded-2xl text-xs font-bold transition flex items-center gap-2 shadow-md cursor-pointer ${
                       task.completed
                         ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                        : 'bg-blue text-white hover:bg-blue/90'
+                        : 'bg-blue text-white hover:bg-blue/90 shadow-blue/25'
                     }`}
                   >
                     {task.completed ? <RefreshCwIcon size={13} /> : <PlayIcon size={13} />}
-                    <span>{task.completed ? 'Review Session' : 'Start Study Session'}</span>
+                    <span>{task.completed ? 'Review Session' : 'Start Study Session →'}</span>
                   </motion.button>
                 </div>
               </div>
@@ -456,7 +448,7 @@ export default function PlanPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.2 }}
-              className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative"
+              className="bg-white rounded-3xl max-w-lg w-full p-7 sm:p-8 shadow-2xl border border-slate-200 relative"
             >
               <button
                 onClick={closeStudySession}
@@ -467,13 +459,13 @@ export default function PlanPage() {
 
               <div className="text-center mb-6">
                 <Badge variant="primary">Active Study Session</Badge>
-                <h2 className="text-xl font-extrabold text-navy tracking-tight mt-2">{activeTask.topic}</h2>
-                <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto">{activeTask.task}</p>
+                <h2 className="text-2xl font-black text-navy tracking-tight mt-2">{activeTask.topic}</h2>
+                <p className="text-xs text-slate-600 mt-1.5 max-w-sm mx-auto">{activeTask.task}</p>
               </div>
 
               {/* Countdown Timer */}
-              <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center justify-center">
-                <div className="font-mono text-5xl font-black text-navy tracking-tight">
+              <div className="my-6 p-7 rounded-3xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center justify-center">
+                <div className="font-mono text-5xl sm:text-6xl font-black text-navy tracking-tight">
                   {formatTimer(secondsRemaining)}
                 </div>
                 <p className="text-xs text-slate-500 mt-2 font-medium">
@@ -481,15 +473,15 @@ export default function PlanPage() {
                 </p>
 
                 {/* Timer Controls */}
-                <div className="flex items-center gap-3 mt-4">
+                <div className="flex items-center gap-3 mt-5">
                   <motion.button
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.96 }}
                     type="button"
                     onClick={() => setIsTimerRunning(!isTimerRunning)}
-                    className="px-4 py-2 rounded-xl bg-navy text-white text-xs font-bold hover:bg-navy/90 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-5 py-2.5 rounded-2xl bg-navy text-white text-xs font-bold hover:bg-navy/90 flex items-center gap-2 cursor-pointer shadow-md shadow-navy/20"
                   >
-                    {isTimerRunning ? <PauseIcon size={13} /> : <PlayIcon size={13} />}
+                    {isTimerRunning ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
                     <span>{isTimerRunning ? 'Pause' : 'Resume'}</span>
                   </motion.button>
                   <motion.button
@@ -497,7 +489,7 @@ export default function PlanPage() {
                     whileTap={{ scale: 0.96 }}
                     type="button"
                     onClick={() => setSecondsRemaining(activeTask.minutes * 60)}
-                    className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-600 hover:text-navy text-xs font-medium cursor-pointer"
+                    className="px-4 py-2.5 rounded-2xl border border-slate-300 text-slate-600 hover:text-navy text-xs font-bold cursor-pointer"
                   >
                     Reset
                   </motion.button>
@@ -506,7 +498,7 @@ export default function PlanPage() {
 
               {/* Session Notes field */}
               <div className="mb-6">
-                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-2">
                   Session Notes & Solved Problems
                 </label>
                 <textarea
@@ -514,7 +506,7 @@ export default function PlanPage() {
                   onChange={(e) => setSessionNotes(e.target.value)}
                   placeholder="Log question numbers solved, shortcut formulas used, or friction points..."
                   rows={3}
-                  className="w-full p-3.5 rounded-xl border border-slate-300 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue resize-none"
+                  className="w-full p-4 rounded-2xl border border-slate-300 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue resize-none"
                 />
               </div>
 
@@ -522,7 +514,7 @@ export default function PlanPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-bold text-center"
+                  className="mb-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-bold text-center"
                 >
                   {completedSuccessMsg}
                 </motion.div>
@@ -533,7 +525,7 @@ export default function PlanPage() {
                 <button
                   type="button"
                   onClick={closeStudySession}
-                  className="flex-1 py-3 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:text-navy cursor-pointer"
+                  className="flex-1 py-3 rounded-2xl border border-slate-300 text-xs font-bold text-slate-600 hover:text-navy cursor-pointer"
                 >
                   Save & Exit Later
                 </button>
@@ -542,9 +534,9 @@ export default function PlanPage() {
                   whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={handleCompleteTask}
-                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/25 transition flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <CheckIcon size={13} />
+                  <CheckIcon size={14} />
                   <span>Mark Task Done</span>
                 </motion.button>
               </div>
@@ -555,23 +547,23 @@ export default function PlanPage() {
 
       {/* Proof of Work Prompt */}
       <BlurFade delay={0.35}>
-        <div className="p-5 rounded-2xl bg-orange/5 border border-orange/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-orange/15 flex items-center justify-center text-orange flex-shrink-0">
-              <FlameIcon size={18} className="text-orange" />
+        <div className="p-6 rounded-3xl bg-orange-50/70 border border-orange-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-orange/15 flex items-center justify-center text-orange flex-shrink-0">
+              <FlameIcon size={20} className="text-orange" />
             </div>
-            <div className="text-navy">
-              <strong>Finished your study block?</strong> Submit a 20-second notebook photo to bump your streak and update your squad feed.
+            <div className="text-navy text-sm font-medium">
+              <strong className="font-extrabold text-navy">Finished your study block?</strong> Submit a 20-second notebook photo to bump your streak and update your squad feed.
             </div>
           </div>
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate('/proof')}
-            className="px-4 py-2.5 rounded-xl bg-orange text-white font-bold flex-shrink-0 hover:bg-orange/90 transition shadow-xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+            className="px-5 py-3 rounded-2xl bg-orange text-white font-extrabold flex-shrink-0 hover:bg-orange/90 transition shadow-md shadow-orange/20 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
           >
             <span>Submit Proof of Work</span>
-            <ArrowRightIcon size={12} />
+            <ArrowRightIcon size={13} />
           </motion.button>
         </div>
       </BlurFade>

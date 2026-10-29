@@ -51,7 +51,7 @@ interface PlanTask {
   completed?: boolean;
 }
 
-// 30 days of seeded logs showing the narrowing gap from ~55% to ~22% (§8 & §9 of spec)
+// 30 days of seeded logs showing the narrowing gap from ~55% to ~22%
 const SEEDED_30_DAYS_LOGS: StudyLogData[] = Array.from({ length: 30 }, (_, index) => {
   const i = 29 - index;
   const d = new Date();
@@ -75,7 +75,7 @@ const SEEDED_30_DAYS_LOGS: StudyLogData[] = Array.from({ length: 30 }, (_, index
   };
 });
 
-// Seeded accuracy & consistency secondary curve (§6 Screen 3)
+// Seeded accuracy & consistency secondary curve
 const ACCURACY_CONSISTENCY_DATA = [
   { week: 'Week 1', accuracy: 44, consistency: 52 },
   { week: 'Week 2', accuracy: 51, consistency: 61 },
@@ -96,14 +96,14 @@ export default function DashboardPage() {
       task: 'Practice 15 relative-motion train problems from standard PYQs',
       minutes: 45,
       type: 'weak_topic',
-      why: 'You scored 32% here on recent diagnostic (measured gap)',
+      why: 'You scored 32% here on recent diagnostic (measured weak area)',
       masteryScore: 32,
       completed: true,
     },
     {
       subject: 'Reasoning',
       topic: 'Syllogism',
-      task: 'Solve 20 "Only a few" categorical syllogism sets',
+      task: 'Solve 20 "Only a few" categorical syllogism drill sets',
       minutes: 30,
       type: 'learning',
       why: 'Due for spaced reinforcement (62% mastery)',
@@ -129,7 +129,6 @@ export default function DashboardPage() {
   useEffect(() => {
     setLiteMode(localStorage.getItem('prepsaathi_lite_mode') === 'true');
 
-    // Fetch real logs from Supabase if connected
     const fetchStudyLogs = async () => {
       if (isDemoUser) return;
       try {
@@ -153,7 +152,6 @@ export default function DashboardPage() {
           setLogs(formatted);
         }
 
-        // Fetch today's cached plan
         const todayStr = new Date().toISOString().split('T')[0];
         const { data: planData } = await supabase
           .from('daily_plans')
@@ -173,11 +171,8 @@ export default function DashboardPage() {
   }, [isDemoUser]);
 
   const currentProfile = profile || DEMO_PROFILE;
-
-  // Filter logs for selected time range
   const displayLogs = timeRange === '7' ? logs.slice(-7) : logs;
 
-  // Compute aggregated stats (§8 Chart 1: Planned · Executed · Gap %)
   const totalPlanned = displayLogs.reduce((acc, curr) => acc + curr.planned_hrs, 0);
   const totalExecuted = displayLogs.reduce((acc, curr) => acc + curr.actual_hrs, 0);
   const overallGapPct = totalPlanned > 0
@@ -219,77 +214,108 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* 1. Header with DecryptedText and NumberTicker */}
+      {/* 1. Header with Executive Greeting, Badges, and High Contrast */}
       <BlurFade delay={0.05}>
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-200">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-grey block">
-              {new Date().toLocaleDateString('en-IN', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight mt-1 flex items-center gap-2">
-              <span>Welcome back,</span>
-              <DecryptedText
-                text={currentProfile.name}
-                speed={35}
-                className="text-blue font-extrabold"
-              />
-            </h1>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-6 border-b border-slate-200/90">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue via-blue-600 to-sky-400 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-blue/25 flex-shrink-0">
+              {currentProfile.name.charAt(0)}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {new Date().toLocaleDateString('en-IN', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+                <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">
+                  Daily Execution Loop
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-navy tracking-tight mt-0.5 flex items-center gap-2">
+                <span>Welcome back,</span>
+                <DecryptedText
+                  text={currentProfile.name}
+                  speed={35}
+                  className="text-blue font-black"
+                />
+              </h1>
+            </div>
           </div>
 
-          <div className="flex items-center flex-wrap gap-2.5 sm:gap-3">
+          {/* Elevated Stat Badges */}
+          <div className="flex items-center flex-wrap gap-3">
             <motion.div
-              whileHover={{ scale: 1.03 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange/10 border border-orange/20 text-orange font-bold text-xs sm:text-sm shadow-xs"
+              whileHover={{ y: -2, scale: 1.02 }}
+              className="bg-white border border-slate-200/90 shadow-sm p-2 px-3.5 rounded-2xl flex items-center gap-2.5"
             >
-              <FlameIcon size={16} className="text-orange" />
-              <NumberTicker value={currentProfile.streak_count} suffix=" Days Streak" className="font-bold text-orange" />
+              <div className="w-8 h-8 rounded-xl bg-orange/15 flex items-center justify-center text-orange">
+                <FlameIcon size={18} className="text-orange" />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold block">Current Streak</span>
+                <span className="text-sm font-extrabold text-orange font-mono">
+                  <NumberTicker value={currentProfile.streak_count} suffix=" Days" />
+                </span>
+              </div>
             </motion.div>
 
             <motion.div
-              whileHover={{ scale: 1.03 }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue/10 border border-blue/20 text-blue font-bold text-xs sm:text-sm shadow-xs"
+              whileHover={{ y: -2, scale: 1.02 }}
+              className="bg-white border border-slate-200/90 shadow-sm p-2 px-3.5 rounded-2xl flex items-center gap-2.5"
             >
-              <StarIcon size={16} className="text-blue" />
-              <NumberTicker value={currentProfile.total_points} suffix=" Points" className="font-bold text-blue" />
+              <div className="w-8 h-8 rounded-xl bg-blue/15 flex items-center justify-center text-blue">
+                <StarIcon size={18} className="text-blue" />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold block">Study Points</span>
+                <span className="text-sm font-extrabold text-blue font-mono">
+                  <NumberTicker value={currentProfile.total_points} suffix=" pts" />
+                </span>
+              </div>
             </motion.div>
 
-            <div className="px-3 py-1.5 rounded-xl bg-navy text-white text-xs font-mono font-bold tracking-wide shadow-xs">
-              {currentProfile.exam}
+            <div className="bg-navy text-white px-4 py-2.5 rounded-2xl text-xs font-mono font-bold tracking-wide shadow-md shadow-navy/20 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{currentProfile.exam} Target</span>
             </div>
           </div>
         </div>
       </BlurFade>
 
-      {/* 2. Execution Summary Banner */}
+      {/* 2. Hero Execution Summary Banner with Radial Glow */}
       <BlurFade delay={0.1}>
-        <div className="relative overflow-hidden p-5 rounded-2xl bg-navy text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-navy/40">
-          <div className="flex items-start md:items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-blue/20 border border-blue/30 flex items-center justify-center text-blue flex-shrink-0">
-              <ClockIcon size={20} className="text-sky" />
+        <div className="relative overflow-hidden p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-[#0B1F3A] via-[#162E52] to-[#0B1F3A] text-white flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-xl shadow-navy/15 border border-blue-900/40">
+          <div className="relative z-10 flex items-start sm:items-center gap-4">
+            <div className="w-13 h-13 rounded-2xl bg-blue/25 border border-sky-400/30 flex items-center justify-center text-sky shadow-inner flex-shrink-0">
+              <ClockIcon size={26} className="text-sky" />
             </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center flex-wrap gap-1.5">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-extrabold tracking-wider uppercase text-sky">Weekly Progress Overview</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky" />
+                <span className="text-xs text-slate-300 font-medium">Auto-calibrated</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center flex-wrap gap-2">
                 <span>You've executed</span>
-                <span className="text-sky font-mono font-extrabold">{totalExecuted.toFixed(0)}</span>
+                <span className="text-sky font-mono font-black text-2xl sm:text-3xl">{totalExecuted.toFixed(0)}</span>
                 <span>of</span>
-                <span className="text-slate-300 font-mono font-extrabold">{totalPlanned.toFixed(0)}</span>
+                <span className="text-slate-300 font-mono font-black text-2xl sm:text-3xl">{totalPlanned.toFixed(0)}</span>
                 <span>planned hours this {timeRange === '7' ? 'week' : 'month'}.</span>
               </h2>
-              <p className="text-xs text-slate-300 mt-0.5">
-                PrepSaathi measures the execution gap daily so your tomorrow adapts to what you actually achieved.
+              <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                PrepSaathi measures the execution gap daily so your tomorrow adapts to what you actually achieved today.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-start md:self-auto flex-shrink-0">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">Current Gap</span>
-              <span className="text-xs sm:text-sm font-bold text-orange bg-orange/20 px-3 py-1 rounded-full border border-orange/30 font-mono">
+          <div className="relative z-10 flex items-center gap-4 self-start md:self-auto flex-shrink-0">
+            <div className="bg-white/10 backdrop-blur-md p-3.5 px-5 rounded-2xl border border-white/15 flex flex-col items-center shadow-inner">
+              <span className="text-[11px] text-slate-300 uppercase tracking-wider font-extrabold">Execution Deficit</span>
+              <span className="text-xl sm:text-2xl font-black text-orange-400 font-mono mt-0.5">
                 {overallGapPct}% deficit
               </span>
             </div>
@@ -297,34 +323,34 @@ export default function DashboardPage() {
         </div>
       </BlurFade>
 
-      {/* 3. Balanced Desktop Grid: 2 Columns for Primary, 1 Column for Secondary */}
+      {/* 3. Balanced Grid: Primary Column (2 cols) vs Secondary Column (1 col) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* PRIMARY COLUMN (2 cols on lg) */}
+        {/* PRIMARY COLUMN */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Hero Chart — Execution Gap with BorderBeam */}
+          {/* Hero Chart — Execution Gap with BorderBeam and Elevated Card Surface */}
           <BlurFade delay={0.15}>
-            <div className="relative bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 md:p-7 overflow-hidden">
-              <BorderBeam size={220} duration={12} colorFrom="#2563EB" colorTo="#60A5FA" />
+            <div className="relative bg-white rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-7 sm:p-8 overflow-hidden">
+              <BorderBeam size={240} duration={14} colorFrom="#2563EB" colorTo="#60A5FA" />
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold text-navy tracking-tight">Execution Gap Analysis</h2>
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-xl font-extrabold text-navy tracking-tight">Execution Gap Analysis</h2>
                     <Badge variant="alert">Core Hero Metric</Badge>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Planned vs Executed study hours. The shaded area shows lost preparation time.
+                    Planned vs Executed study hours. The shaded orange area shows lost preparation momentum.
                   </p>
                 </div>
 
-                {/* Time Range Toggle */}
-                <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs self-start sm:self-auto font-medium">
+                {/* Range Toggle */}
+                <div className="flex items-center rounded-2xl bg-slate-100 p-1.5 border border-slate-200 text-xs self-start sm:self-auto font-semibold shadow-inner">
                   <button
                     type="button"
                     onClick={() => setTimeRange('7')}
-                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                    className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                       timeRange === '7'
-                        ? 'bg-white text-blue shadow-xs font-bold'
+                        ? 'bg-white text-blue shadow-sm font-bold'
                         : 'text-slate-600 hover:text-navy'
                     }`}
                   >
@@ -333,9 +359,9 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setTimeRange('30')}
-                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                    className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                       timeRange === '30'
-                        ? 'bg-white text-blue shadow-xs font-bold'
+                        ? 'bg-white text-blue shadow-sm font-bold'
                         : 'text-slate-600 hover:text-navy'
                     }`}
                   >
@@ -344,15 +370,15 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Chart Area or Lite Mode */}
+              {/* Chart Area */}
               {liteMode ? (
-                <div className="p-5 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200">
                   <span className="text-xs font-bold text-navy block mb-3 uppercase tracking-wider">
                     [Lite Mode Active] Daily Execution Table
                   </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                     {displayLogs.slice(-8).map((log, idx) => (
-                      <div key={idx} className="p-3 rounded-lg bg-white border border-slate-200 shadow-2xs">
+                      <div key={idx} className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs">
                         <span className="font-bold text-navy block">{log.dayLabel}</span>
                         <div className="text-grey text-[11px] mt-1">Planned: {log.planned_hrs}h</div>
                         <div className="text-blue font-bold text-[11px]">Executed: {log.actual_hrs}h</div>
@@ -362,16 +388,16 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : (
-                <div className="h-80 w-full">
+                <div className="h-84 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={displayLogs} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={displayLogs} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="gapFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#F97316" stopOpacity={0.18} />
+                          <stop offset="5%" stopColor="#F97316" stopOpacity={0.28} />
                           <stop offset="95%" stopColor="#F97316" stopOpacity={0.02} />
                         </linearGradient>
                         <linearGradient id="executedFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#2563EB" stopOpacity={0.12} />
+                          <stop offset="5%" stopColor="#2563EB" stopOpacity={0.22} />
                           <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
                         </linearGradient>
                       </defs>
@@ -379,13 +405,13 @@ export default function DashboardPage() {
                       <XAxis
                         dataKey="dayLabel"
                         stroke="#94A3B8"
-                        fontSize={11}
+                        fontSize={12}
                         tickLine={false}
                         axisLine={{ stroke: '#CBD5E1' }}
                       />
                       <YAxis
                         stroke="#94A3B8"
-                        fontSize={11}
+                        fontSize={12}
                         tickLine={false}
                         axisLine={false}
                         unit="h"
@@ -397,17 +423,17 @@ export default function DashboardPage() {
                           if (active && payload && payload.length) {
                             const data = payload[0].payload as StudyLogData;
                             return (
-                              <div className="bg-navy text-white text-xs p-3.5 rounded-xl shadow-xl border border-navy/40 space-y-1.5 min-w-[170px]">
-                                <p className="font-bold text-sky text-sm">{data.dayLabel}</p>
+                              <div className="bg-[#0B1F3A]/95 backdrop-blur-md text-white text-xs p-4 rounded-2xl shadow-2xl border border-slate-700 space-y-2 min-w-[190px]">
+                                <p className="font-extrabold text-sky text-sm border-b border-white/10 pb-1.5">{data.dayLabel}</p>
                                 <div className="flex justify-between gap-4 text-slate-300">
-                                  <span>Planned:</span>
+                                  <span>Planned Hours:</span>
                                   <span className="font-mono font-semibold text-white">{data.planned_hrs} hrs</span>
                                 </div>
                                 <div className="flex justify-between gap-4 text-slate-300">
-                                  <span>Executed:</span>
-                                  <span className="font-mono font-bold text-blue-300">{data.actual_hrs} hrs</span>
+                                  <span>Executed Hours:</span>
+                                  <span className="font-mono font-bold text-sky-300">{data.actual_hrs} hrs</span>
                                 </div>
-                                <div className="flex justify-between gap-4 pt-1.5 border-t border-white/15 text-orange font-bold">
+                                <div className="flex justify-between gap-4 pt-1.5 border-t border-white/15 text-orange font-bold text-sm">
                                   <span>Execution Gap:</span>
                                   <span className="font-mono">{data.gap_hrs} hrs</span>
                                 </div>
@@ -417,22 +443,20 @@ export default function DashboardPage() {
                           return null;
                         }}
                       />
-                      {/* Planned Hours: Dashed grey #94A3B8 */}
                       <Area
                         type="monotone"
                         dataKey="planned_hrs"
                         stroke="#94A3B8"
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         strokeDasharray="5 5"
                         fill="url(#gapFill)"
                         name="Planned Hours"
                       />
-                      {/* Executed Hours: Solid blue #2563EB (3px) */}
                       <Area
                         type="monotone"
                         dataKey="actual_hrs"
                         stroke="#2563EB"
-                        strokeWidth={3}
+                        strokeWidth={3.5}
                         fill="url(#executedFill)"
                         name="Executed Hours"
                       />
@@ -441,29 +465,29 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Metrics Below Chart with NumberTicker */}
-              <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-slate-100 text-center">
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-grey block">
+              {/* 3 Metric Cards Below Chart */}
+              <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-100 text-center">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 shadow-xs">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
                     Total Planned
                   </span>
-                  <span className="text-xl font-extrabold text-navy font-mono mt-0.5 block">
+                  <span className="text-2xl font-black text-navy font-mono mt-1 block">
                     <NumberTicker value={totalPlanned} decimalPlaces={1} suffix="h" />
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-blue/5 border border-blue/15">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-blue block">
+                <div className="p-4 rounded-2xl bg-blue-50/80 border border-blue-200 shadow-xs">
+                  <span className="text-xs font-bold uppercase tracking-wider text-blue block">
                     Total Executed
                   </span>
-                  <span className="text-xl font-extrabold text-blue font-mono mt-0.5 block">
+                  <span className="text-2xl font-black text-blue-700 font-mono mt-1 block">
                     <NumberTicker value={totalExecuted} decimalPlaces={1} suffix="h" />
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-orange/5 border border-orange/15">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-orange block">
+                <div className="p-4 rounded-2xl bg-orange-50/80 border border-orange-200 shadow-xs">
+                  <span className="text-xs font-bold uppercase tracking-wider text-orange block">
                     Execution Gap
                   </span>
-                  <span className="text-xl font-extrabold text-orange font-mono mt-0.5 block">
+                  <span className="text-2xl font-black text-orange-600 font-mono mt-1 block">
                     <NumberTicker value={overallGapPct} suffix="%" />
                   </span>
                 </div>
@@ -473,12 +497,12 @@ export default function DashboardPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between"
+                  className="mt-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between"
                 >
-                  <span>
-                    📈 <strong>The Execution Thesis:</strong> Over the last 30 days, this aspirant's gap narrowed from <strong>55% down to 22%</strong>.
+                  <span className="text-sm">
+                    📈 <strong>The Execution Thesis:</strong> Over the last 30 days, your gap narrowed from <strong>55% down to 22%</strong>.
                   </span>
-                  <span className="font-bold text-emerald-700 uppercase tracking-wider text-[10px] bg-emerald-100 px-2 py-0.5 rounded">
+                  <span className="font-extrabold text-emerald-700 uppercase tracking-wider text-xs bg-emerald-100 px-3 py-1 rounded-xl">
                     Loop Validated
                   </span>
                 </motion.div>
@@ -486,103 +510,102 @@ export default function DashboardPage() {
             </div>
           </BlurFade>
 
-          {/* Today's Adaptive Plan Card with SpotlightCard hover */}
+          {/* Today's Adaptive Plan Section with Elevated Individual Cards */}
           <BlurFade delay={0.2}>
-            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 md:p-7 space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-7 sm:p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold text-navy tracking-tight">Today's Adaptive Plan</h2>
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-xl font-extrabold text-navy tracking-tight">Today's Adaptive Plan</h2>
                     <Badge variant="primary">
-                      <SparklesIcon size={12} className="text-blue" />
-                      <span>AI-generated from weak topics</span>
+                      <SparklesIcon size={13} className="text-blue" />
+                      <span>Grounded AI Engine</span>
                     </Badge>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Target: <strong>{currentProfile.daily_target_hrs} hours</strong>. Grounded in your measured diagnostic scores.
+                    Target: <strong className="text-navy">{currentProfile.daily_target_hrs} hours</strong>. Scheduled dynamically from your measured diagnostic weak spots.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => navigate('/plan')}
-                  className="text-xs font-bold text-blue hover:text-blue/80 transition flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                  className="text-xs font-extrabold text-blue hover:text-blue/80 transition flex items-center gap-1.5 self-start sm:self-auto cursor-pointer bg-blue/10 px-3.5 py-1.5 rounded-xl hover:bg-blue/15"
                 >
                   <span>Full Timetable</span>
                   <ArrowRightIcon size={12} />
                 </button>
               </div>
 
-              {/* Task Rows using SpotlightCard */}
-              <div className="space-y-3.5">
+              {/* Individual Task Cards */}
+              <div className="space-y-4">
                 {tasks.map((task, idx) => (
                   <SpotlightCard
                     key={idx}
                     spotlightColor="rgba(37, 99, 235, 0.08)"
-                    className={`p-4 sm:p-5 transition-all ${
+                    className={`p-5 sm:p-6 rounded-2xl border transition-all shadow-sm hover:shadow-md ${
                       task.completed
-                        ? 'border-emerald-200 bg-emerald-50/20'
-                        : 'border-slate-200/80 bg-white hover:border-blue/40 shadow-2xs'
+                        ? 'border-emerald-300 bg-emerald-50/20'
+                        : 'border-slate-200/90 bg-white hover:border-blue-400'
                     }`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-2 flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
                             {task.subject}
                           </span>
                           <Badge
                             variant={
                               (task.masteryScore ?? 50) < 40
-                               ? 'weak'
+                                ? 'weak'
                                 : (task.masteryScore ?? 50) <= 70
                                 ? 'learning'
                                 : 'mastered'
                             }
                           >
                             {(task.masteryScore ?? 50) < 40
-                              ? 'Weak Topic'
+                              ? '#1 Weakest Area'
                               : (task.masteryScore ?? 50) <= 70
-                              ? 'Reinforcing'
+                              ? 'Reinforcement'
                               : 'Revision'}
                             {' '}({task.masteryScore}%)
                           </Badge>
                           {task.completed && (
-                            <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                              <CheckIcon size={10} />
-                              <span>Done</span>
+                            <span className="text-[11px] font-extrabold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-xs">
+                              <CheckIcon size={11} />
+                              <span>Completed</span>
                             </span>
                           )}
                         </div>
 
-                        <h3 className="font-bold text-sm sm:text-base text-navy">{task.topic}</h3>
-                        <p className="text-xs text-slate-600 leading-relaxed">{task.task}</p>
+                        <h3 className="font-extrabold text-base sm:text-lg text-navy">{task.topic}</h3>
+                        <p className="text-sm text-slate-600 leading-relaxed font-normal">{task.task}</p>
 
-                        {/* AI Why Rationale Line */}
-                        <p className="text-[11px] text-blue font-medium pt-1">
-                          🎯 <strong>Why:</strong> {task.why}
-                        </p>
+                        <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200/70 text-xs text-blue-950 font-medium">
+                          🎯 <strong>AI Rationale:</strong> {task.why}
+                        </div>
                       </div>
 
                       {/* Actions and Duration */}
-                      <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
-                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
-                          <ClockIcon size={13} className="text-slate-500" />
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3.5 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                          <ClockIcon size={14} className="text-slate-500" />
                           <span>{task.minutes}m</span>
                         </div>
 
                         <motion.button
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
+                          whileHover={{ scale: 1.04 }}
+                          whileTap={{ scale: 0.96 }}
                           type="button"
                           onClick={() => handleStartTask(idx)}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
+                          className={`px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-md cursor-pointer ${
                             task.completed
                               ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                              : 'bg-blue text-white hover:bg-blue/90'
+                              : 'bg-blue text-white hover:bg-blue/90 shadow-blue/20'
                           }`}
                         >
-                          {task.completed ? 'Review Session' : 'Start Task'}
+                          {task.completed ? 'Review Session' : 'Start Task →'}
                         </motion.button>
                       </div>
                     </div>
@@ -608,21 +631,24 @@ export default function DashboardPage() {
         <div className="space-y-6">
           {/* Daily Goals Card */}
           <BlurFade delay={0.25}>
-            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 space-y-4">
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-6 sm:p-7 space-y-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm text-navy tracking-tight">Daily Execution Goals</h3>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                <div>
+                  <h3 className="font-extrabold text-base text-navy tracking-tight">Daily Execution Goals</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">3 tasks allocated today</p>
+                </div>
+                <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100/80 border border-emerald-300 px-3 py-1 rounded-full shadow-xs">
                   2 of 3 Done
                 </span>
               </div>
 
-              <div className="space-y-2.5 text-xs">
+              <div className="space-y-3 text-xs">
                 <motion.div
-                  whileHover={{ x: 2 }}
-                  className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50/50 border border-emerald-200"
+                  whileHover={{ x: 3 }}
+                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200"
                 >
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
-                    <CheckIcon size={11} />
+                  <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <CheckIcon size={12} />
                   </span>
                   <span className="line-through text-slate-500 font-medium flex-1">
                     Relative Motion train problems (45m)
@@ -630,11 +656,11 @@ export default function DashboardPage() {
                 </motion.div>
 
                 <motion.div
-                  whileHover={{ x: 2 }}
-                  className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50/50 border border-emerald-200"
+                  whileHover={{ x: 3 }}
+                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200"
                 >
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
-                    <CheckIcon size={11} />
+                  <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <CheckIcon size={12} />
                   </span>
                   <span className="line-through text-slate-500 font-medium flex-1">
                     20 Syllogism drill sets (30m)
@@ -642,11 +668,11 @@ export default function DashboardPage() {
                 </motion.div>
 
                 <motion.div
-                  whileHover={{ x: 2 }}
-                  className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200"
+                  whileHover={{ x: 3 }}
+                  className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs"
                 >
-                  <span className="w-5 h-5 rounded-full border-2 border-slate-300 flex-shrink-0" />
-                  <span className="text-navy font-semibold flex-1">
+                  <span className="w-6 h-6 rounded-full border-2 border-slate-300 flex-shrink-0" />
+                  <span className="text-navy font-bold flex-1">
                     Reading Comprehension timed session (40m)
                   </span>
                 </motion.div>
@@ -656,27 +682,30 @@ export default function DashboardPage() {
 
           {/* Squad Snapshot Card */}
           <BlurFade delay={0.3}>
-            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 space-y-3.5">
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-6 sm:p-7 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm text-navy tracking-tight">Squad Snapshot</h3>
-                <span className="text-[10px] font-bold text-orange bg-orange/10 px-2 py-0.5 rounded-md border border-orange/20">
+                <div>
+                  <h3 className="font-extrabold text-base text-navy tracking-tight">Squad Snapshot</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Cohort peer accountability</p>
+                </div>
+                <span className="text-xs font-bold text-orange bg-orange/15 px-2.5 py-0.5 rounded-lg border border-orange/25">
                   SSC CGL #4
                 </span>
               </div>
 
-              <div className="space-y-2.5 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Checked in today:</span>
-                  <span className="font-bold text-emerald-700 font-mono">4 of 6 members</span>
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 font-medium">Checked in today:</span>
+                  <span className="font-extrabold text-emerald-700 font-mono text-sm">4 of 6 members</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Average squad streak:</span>
-                  <span className="font-bold text-orange font-mono flex items-center gap-1">
-                    <FlameIcon size={13} className="text-orange" />
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 font-medium">Average squad streak:</span>
+                  <span className="font-extrabold text-orange font-mono text-sm flex items-center gap-1">
+                    <FlameIcon size={14} className="text-orange" />
                     <span>11.2 days</span>
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-orange/5 border border-orange/20 text-[11px] text-orange-950">
+                <div className="p-3 rounded-xl bg-orange-50/80 border border-orange-200 text-xs text-orange-950 font-medium leading-relaxed">
                   <strong>Loss Aversion active:</strong> 2 peers are pending proof submission before 23:59.
                 </div>
               </div>
@@ -686,60 +715,72 @@ export default function DashboardPage() {
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={() => navigate('/squad')}
-                className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-navy font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-navy font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
               >
                 <span>View Squad Accountability Board</span>
-                <ArrowRightIcon size={12} />
+                <ArrowRightIcon size={13} />
               </motion.button>
             </div>
           </BlurFade>
 
-          {/* Quick Actions Card */}
+          {/* Quick Actions Card with Rich Tactile Tiles */}
           <BlurFade delay={0.35}>
-            <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 space-y-3">
-              <h3 className="font-bold text-sm text-navy tracking-tight">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-2.5 text-xs font-bold">
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-6 sm:p-7 space-y-4">
+              <div>
+                <h3 className="font-extrabold text-base text-navy tracking-tight">Quick Actions</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Jump directly into the daily loop</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs font-bold">
                 <motion.button
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -3, scale: 1.02 }}
                   whileTap={{ scale: 0.96 }}
                   type="button"
                   onClick={() => navigate('/library')}
-                  className="p-3.5 rounded-xl bg-blue/5 hover:bg-blue/15 border border-blue/20 text-blue flex flex-col items-center gap-2 transition text-center cursor-pointer shadow-2xs"
+                  className="p-4 rounded-2xl bg-blue-50/80 hover:bg-blue-100 border border-blue-200 text-blue-800 flex flex-col items-center gap-2.5 transition text-center cursor-pointer shadow-sm hover:shadow-md"
                 >
-                  <UploadIcon size={20} className="text-blue" />
+                  <div className="w-10 h-10 rounded-xl bg-blue/15 flex items-center justify-center text-blue">
+                    <UploadIcon size={20} className="text-blue" />
+                  </div>
                   <span>Upload Document</span>
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -3, scale: 1.02 }}
                   whileTap={{ scale: 0.96 }}
                   type="button"
                   onClick={() => navigate('/quiz')}
-                  className="p-3.5 rounded-xl bg-orange/5 hover:bg-orange/15 border border-orange/20 text-orange flex flex-col items-center gap-2 transition text-center cursor-pointer shadow-2xs"
+                  className="p-4 rounded-2xl bg-orange-50/80 hover:bg-orange-100 border border-orange-200 text-orange-800 flex flex-col items-center gap-2.5 transition text-center cursor-pointer shadow-sm hover:shadow-md"
                 >
-                  <QuizIcon size={20} className="text-orange" />
+                  <div className="w-10 h-10 rounded-xl bg-orange/15 flex items-center justify-center text-orange">
+                    <QuizIcon size={20} className="text-orange" />
+                  </div>
                   <span>Take Quiz</span>
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -3, scale: 1.02 }}
                   whileTap={{ scale: 0.96 }}
                   type="button"
                   onClick={() => navigate('/proof')}
-                  className="p-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 flex flex-col items-center gap-2 transition text-center cursor-pointer shadow-2xs"
+                  className="p-4 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 flex flex-col items-center gap-2.5 transition text-center cursor-pointer shadow-sm hover:shadow-md"
                 >
-                  <ProofIcon size={20} className="text-emerald-700" />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600/15 flex items-center justify-center text-emerald-700">
+                    <ProofIcon size={20} className="text-emerald-700" />
+                  </div>
                   <span>Submit Proof</span>
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ y: -2 }}
+                  whileHover={{ y: -3, scale: 1.02 }}
                   whileTap={{ scale: 0.96 }}
                   type="button"
                   onClick={() => setShowLogModal(true)}
-                  className="p-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-navy flex flex-col items-center gap-2 transition text-center cursor-pointer shadow-2xs"
+                  className="p-4 rounded-2xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-800 flex flex-col items-center gap-2.5 transition text-center cursor-pointer shadow-sm hover:shadow-md"
                 >
-                  <ClockIcon size={20} className="text-navy" />
+                  <div className="w-10 h-10 rounded-xl bg-navy/10 flex items-center justify-center text-navy">
+                    <ClockIcon size={20} className="text-navy" />
+                  </div>
                   <span>Log Hours</span>
                 </motion.button>
               </div>
@@ -750,42 +791,42 @@ export default function DashboardPage() {
 
       {/* 4. Secondary Consistency & Accuracy Progression Curve */}
       <BlurFade delay={0.4}>
-        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 md:p-7 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-7 sm:p-8 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-navy tracking-tight">
+              <h3 className="text-lg font-extrabold text-navy tracking-tight">
                 Consistency & Accuracy Progression Curve
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-1">
                 Correlating weekly study discipline with diagnostic test accuracy scores.
               </p>
             </div>
-            <div className="flex items-center gap-4 text-xs font-semibold">
-              <span className="flex items-center gap-1.5 text-blue">
-                <span className="w-3.5 h-1 bg-blue rounded-full inline-block" /> Accuracy %
+            <div className="flex items-center gap-5 text-xs font-bold">
+              <span className="flex items-center gap-2 text-blue">
+                <span className="w-4 h-1.5 bg-blue rounded-full inline-block" /> Accuracy %
               </span>
-              <span className="flex items-center gap-1.5 text-orange">
-                <span className="w-3.5 h-1 bg-orange rounded-full inline-block" /> Consistency %
+              <span className="flex items-center gap-2 text-orange">
+                <span className="w-4 h-1.5 bg-orange rounded-full inline-block" /> Consistency %
               </span>
             </div>
           </div>
 
-          <div className="h-52 w-full">
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={ACCURACY_CONSISTENCY_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={ACCURACY_CONSISTENCY_DATA} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="week" stroke="#94A3B8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} unit="%" />
+                <XAxis dataKey="week" stroke="#94A3B8" fontSize={12} tickLine={false} />
+                <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} unit="%" />
                 <Tooltip />
-                <Line type="monotone" dataKey="accuracy" stroke="#2563EB" strokeWidth={2.5} name="Accuracy %" />
-                <Line type="monotone" dataKey="consistency" stroke="#F97316" strokeWidth={2.5} name="Consistency %" />
+                <Line type="monotone" dataKey="accuracy" stroke="#2563EB" strokeWidth={3} name="Accuracy %" />
+                <Line type="monotone" dataKey="consistency" stroke="#F97316" strokeWidth={3} name="Consistency %" />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
       </BlurFade>
 
-      {/* Manual Hours Log Modal with AnimatePresence */}
+      {/* Manual Hours Log Modal */}
       <AnimatePresence>
         {showLogModal && (
           <div className="fixed inset-0 bg-navy/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
@@ -794,15 +835,15 @@ export default function DashboardPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200"
+              className="bg-white rounded-3xl max-w-sm w-full p-7 shadow-2xl border border-slate-200"
             >
-              <h3 className="text-lg font-bold text-navy tracking-tight mb-1">Log Executed Study Hours</h3>
-              <p className="text-xs text-slate-500 mb-4">
+              <h3 className="text-xl font-extrabold text-navy tracking-tight mb-1">Log Executed Study Hours</h3>
+              <p className="text-xs text-slate-500 mb-5">
                 Enter hours studied today to update your execution gap live.
               </p>
 
-              <div className="mb-4">
-                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+              <div className="mb-5">
+                <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-2">
                   Hours Studied Today
                 </label>
                 <input
@@ -812,15 +853,15 @@ export default function DashboardPage() {
                   max="16"
                   value={logHoursInput}
                   onChange={(e) => setLogHoursInput(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-navy font-bold text-lg focus:ring-2 focus:ring-blue focus:outline-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-300 text-navy font-black text-2xl focus:ring-2 focus:ring-blue focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-2 justify-end">
+              <div className="flex gap-3 justify-end">
                 <button
                   type="button"
                   onClick={() => setShowLogModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-500 hover:text-navy font-medium cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs text-slate-500 hover:text-navy font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -829,7 +870,7 @@ export default function DashboardPage() {
                   whileTap={{ scale: 0.97 }}
                   type="button"
                   onClick={handleManualHourLog}
-                  className="px-5 py-2 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-md shadow-blue/20 cursor-pointer"
                 >
                   Save & Update Gap
                 </motion.button>
