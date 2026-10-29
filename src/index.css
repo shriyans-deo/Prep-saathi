@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+/* PrepSaathi design tokens — spec §6 */
+@theme {
+  --color-navy: #0B1F3A;
+  --color-blue: #2563EB;
+  --color-sky: #60A5FA;
+  --color-orange: #F97316;
+  --color-grey: #94A3B8;
+  --color-bg: #F8FAFC;
+  --font-inter: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F8FAFC;
+  color: #0B1F3A;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
