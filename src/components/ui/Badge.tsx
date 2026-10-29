@@ -20,14 +20,14 @@ export function Badge({ variant = 'default', children, className = '', ...props 
   const baseClasses = 'inline-flex items-center gap-1 font-semibold text-xs px-2.5 py-0.5 rounded-full transition-colors';
 
   const variants: Record<BadgeVariant, string> = {
-    default: 'bg-slate-100 text-navy border border-slate-200',
-    primary: 'bg-blue/10 text-blue border border-blue/20',
-    weak: 'bg-red-50 text-red-700 border border-red-200',
-    learning: 'bg-amber-50 text-amber-800 border border-amber-200',
-    mastered: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
-    alert: 'bg-orange/10 text-orange border border-orange/25',
-    neutral: 'bg-navy/5 text-slate-700 border border-navy/10',
-    outline: 'border border-slate-300 text-slate-700 bg-transparent',
+    default: 'bg-slate-100 text-[#0B1F3A] border border-slate-300 font-bold',
+    primary: 'bg-blue-50 text-blue-700 border border-blue-200 font-bold shadow-xs',
+    weak: 'bg-rose-50 text-rose-700 border border-rose-200 font-bold shadow-xs',
+    learning: 'bg-amber-50 text-amber-800 border border-amber-200 font-bold shadow-xs',
+    mastered: 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold shadow-xs',
+    alert: 'bg-orange-50 text-orange-700 border border-orange-200 font-bold shadow-xs',
+    neutral: 'bg-slate-100 text-slate-700 border border-slate-200 font-semibold',
+    outline: 'border border-slate-300 text-slate-700 bg-white font-medium',
   };
 
   return (

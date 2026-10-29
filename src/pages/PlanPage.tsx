@@ -290,6 +290,11 @@ export default function PlanPage() {
 
   const activeTask = activeTaskIndex !== null ? tasks[activeTaskIndex] : null;
 
+  const totalMinutes = tasks.reduce((acc, t) => acc + (t.minutes || 0), 0);
+  const completedMinutes = tasks.filter((t) => t.completed).reduce((acc, t) => acc + (t.minutes || 0), 0);
+  const completedTasksCount = tasks.filter((t) => t.completed).length;
+  const completionPct = totalMinutes > 0 ? Math.round((completedMinutes / totalMinutes) * 100) : 0;
+
   return (
     <div className="space-y-8">
       {/* Header with Regenerate Action */}
@@ -342,101 +347,234 @@ export default function PlanPage() {
         </motion.div>
       )}
 
-      {/* Focus Note Card */}
-      <BlurFade delay={0.1}>
-        <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-blue/15 border border-blue/20 flex items-center justify-center text-blue flex-shrink-0">
-            <SparklesIcon size={22} className="text-blue" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-blue block">
-              Today's Primary Focus Note
-            </span>
-            <p className="text-base font-bold text-navy leading-relaxed">
-              <DecryptedText text={focusNote} speed={30} className="font-bold text-navy" />
-            </p>
-          </div>
-        </div>
-      </BlurFade>
+      {/* 2-Column Responsive Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* MAIN COLUMN: Focus & Tasks (8 cols) */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Focus Note Card */}
+          <BlurFade delay={0.1}>
+            <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue/15 border border-blue/20 flex items-center justify-center text-blue flex-shrink-0">
+                <SparklesIcon size={22} className="text-blue" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-blue block">
+                  Today's Primary Focus Note
+                </span>
+                <p className="text-base font-bold text-navy leading-relaxed">
+                  <DecryptedText text={focusNote} speed={30} className="font-bold text-navy" />
+                </p>
+              </div>
+            </div>
+          </BlurFade>
 
-      {/* Task List Workspace */}
-      <div className="space-y-5">
-        {tasks.map((task, idx) => (
-          <BlurFade key={idx} delay={0.15 + idx * 0.05}>
-            <SpotlightCard
-              spotlightColor="rgba(37, 99, 235, 0.08)"
-              className={`p-6 sm:p-7 rounded-3xl border transition-all shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-xl hover:border-blue-400 ${
-                task.completed
-                  ? 'border-emerald-300 bg-emerald-50/20'
-                  : 'border-slate-200/90 bg-white'
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                <div className="space-y-2.5 flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                      {task.subject}
-                    </span>
-                    <Badge
-                      variant={
-                        task.type === 'weak_topic'
-                          ? 'weak'
-                          : task.type === 'learning'
-                          ? 'learning'
-                          : 'mastered'
-                      }
-                    >
-                      {task.type === 'weak_topic'
-                        ? '#1 Weakest Area'
-                        : task.type === 'learning'
-                        ? 'Reinforcement'
-                        : 'Revision'}
-                    </Badge>
-                    <span className="text-xs font-mono bg-slate-100 border border-slate-200 text-slate-700 px-3 py-0.5 rounded-lg font-bold">
-                      Mastery: {task.masteryScore}%
-                    </span>
-                    {task.completed && (
-                      <span className="text-xs font-extrabold bg-emerald-600 text-white px-3 py-0.5 rounded-full inline-flex items-center gap-1.5 shadow-xs">
-                        <CheckIcon size={12} />
-                        <span>Completed</span>
-                      </span>
-                    )}
+          {/* Task List Workspace */}
+          <div className="space-y-4">
+            {tasks.map((task, idx) => (
+              <BlurFade key={idx} delay={0.15 + idx * 0.05}>
+                <SpotlightCard
+                  spotlightColor="rgba(37, 99, 235, 0.08)"
+                  className={`p-6 sm:p-7 rounded-3xl border transition-all shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] hover:shadow-xl hover:border-blue-400 ${
+                    task.completed
+                      ? 'border-emerald-300 bg-emerald-50/20'
+                      : 'border-slate-200/90 bg-white'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                    <div className="space-y-2.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                          {task.subject}
+                        </span>
+                        <Badge
+                          variant={
+                            task.type === 'weak_topic'
+                              ? 'weak'
+                              : task.type === 'learning'
+                              ? 'learning'
+                              : 'mastered'
+                          }
+                        >
+                          {task.type === 'weak_topic'
+                            ? '#1 Weakest Area'
+                            : task.type === 'learning'
+                            ? 'Reinforcement'
+                            : 'Revision'}
+                        </Badge>
+                        <span className="text-xs font-mono bg-slate-100 border border-slate-200 text-slate-700 px-3 py-0.5 rounded-lg font-bold">
+                          Mastery: {task.masteryScore}%
+                        </span>
+                        {task.completed && (
+                          <span className="text-xs font-extrabold bg-emerald-600 text-white px-3 py-0.5 rounded-full inline-flex items-center gap-1.5 shadow-xs">
+                            <CheckIcon size={12} />
+                            <span>Completed</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-lg sm:text-xl font-black text-navy">{task.topic}</h3>
+                      <p className="text-sm text-slate-600 leading-relaxed font-normal">{task.task}</p>
+
+                      <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200/70 text-xs text-blue-950 font-medium">
+                        🎯 <strong>AI Rationale:</strong> {task.why}
+                      </div>
+                    </div>
+
+                    {/* Action and Duration Column */}
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-xs">
+                        <ClockIcon size={14} className="text-slate-500" />
+                        <span>{task.minutes} min</span>
+                      </div>
+
+                      <motion.button
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.96 }}
+                        type="button"
+                        onClick={() => openStudySession(idx)}
+                        className={`px-6 py-3 rounded-2xl text-xs font-bold transition flex items-center gap-2 shadow-md cursor-pointer ${
+                          task.completed
+                            ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                            : 'bg-blue text-white hover:bg-blue/90 shadow-blue/25'
+                        }`}
+                      >
+                        {task.completed ? <RefreshCwIcon size={13} /> : <PlayIcon size={13} />}
+                        <span>{task.completed ? 'Review Session' : 'Start Study Session →'}</span>
+                      </motion.button>
+                    </div>
                   </div>
+                </SpotlightCard>
+              </BlurFade>
+            ))}
+          </div>
 
-                  <h3 className="text-lg sm:text-xl font-black text-navy">{task.topic}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed font-normal">{task.task}</p>
-
-                  <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200/70 text-xs text-blue-950 font-medium">
-                    🎯 <strong>AI Rationale:</strong> {task.why}
-                  </div>
+          {/* Proof of Work Prompt */}
+          <BlurFade delay={0.35}>
+            <div className="p-6 rounded-3xl bg-orange-50/80 border border-orange-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-xs">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-orange/15 flex items-center justify-center text-orange flex-shrink-0">
+                  <FlameIcon size={20} className="text-orange" />
                 </div>
-
-                {/* Action and Duration Column */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
-                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-xs">
-                    <ClockIcon size={14} className="text-slate-500" />
-                    <span>{task.minutes} min</span>
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.96 }}
-                    type="button"
-                    onClick={() => openStudySession(idx)}
-                    className={`px-6 py-3 rounded-2xl text-xs font-bold transition flex items-center gap-2 shadow-md cursor-pointer ${
-                      task.completed
-                        ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                        : 'bg-blue text-white hover:bg-blue/90 shadow-blue/25'
-                    }`}
-                  >
-                    {task.completed ? <RefreshCwIcon size={13} /> : <PlayIcon size={13} />}
-                    <span>{task.completed ? 'Review Session' : 'Start Study Session →'}</span>
-                  </motion.button>
+                <div className="text-navy text-sm font-medium">
+                  <strong className="font-extrabold text-navy">Finished your study block?</strong> Submit a 20-second notebook photo to bump your streak and update your squad feed.
                 </div>
               </div>
-            </SpotlightCard>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => navigate('/proof')}
+                className="px-5 py-3 rounded-2xl bg-orange text-white font-extrabold flex-shrink-0 hover:bg-orange/90 transition shadow-md shadow-orange/20 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+              >
+                <span>Submit Proof of Work</span>
+                <ArrowRightIcon size={13} />
+              </motion.button>
+            </div>
           </BlurFade>
-        ))}
+        </div>
+
+        {/* COMPANION SIDEBAR: Allocation, Strategy & Diagnostic (4 cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Card 1: Today's Study Allocation */}
+          <BlurFade delay={0.15}>
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] p-6 sm:p-7 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="font-extrabold text-base text-navy tracking-tight">Today's Time Budget</h3>
+                <span className="text-xs font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                  {totalMinutes} min total
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-slate-600">Completion Progress</span>
+                  <span className="text-blue font-mono">{completedTasksCount} of {tasks.length} tasks ({completionPct}%)</span>
+                </div>
+                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${completionPct}%` }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    className="h-full bg-gradient-to-r from-blue to-emerald-500 rounded-full"
+                  />
+                </div>
+              </div>
+
+              {/* Subject Breakdown Bars */}
+              <div className="space-y-3 pt-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                  Subject Time Distribution
+                </span>
+                {tasks.map((task, i) => {
+                  const pct = totalMinutes > 0 ? Math.round((task.minutes / totalMinutes) * 100) : 25;
+                  const colors = [
+                    'bg-blue',
+                    'bg-amber-500',
+                    'bg-emerald-500',
+                    'bg-purple-500',
+                  ];
+                  return (
+                    <div key={i} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-semibold text-slate-700 truncate max-w-[170px]">{task.subject}</span>
+                        <span className="font-mono text-slate-500 font-bold">{task.minutes}m ({pct}%)</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${colors[i % colors.length]} rounded-full`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </BlurFade>
+
+          {/* Card 2: AI Execution Strategy */}
+          <BlurFade delay={0.2}>
+            <div className="bg-[#0B1F3A] text-white rounded-3xl border border-blue-900/40 shadow-xl shadow-navy/15 p-6 sm:p-7 space-y-4">
+              <div className="flex items-center gap-2 text-sky">
+                <SparklesIcon size={18} />
+                <span className="text-xs font-black uppercase tracking-wider">Cognitive Load Sequencing</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Your highest-effort topic (<strong className="text-white">Quantitative Aptitude</strong>) is scheduled first while executive cognitive stamina is fresh. English reading comprehension is positioned later to balance mental fatigue.
+              </p>
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+                <span>Spaced Retention Active</span>
+                <span className="font-bold text-sky font-mono">Day 3 of 7</span>
+              </div>
+            </div>
+          </BlurFade>
+
+          {/* Card 3: Quick Diagnostic Assessment */}
+          <BlurFade delay={0.25}>
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] p-6 sm:p-7 space-y-3.5">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-xl bg-blue/10 flex items-center justify-center text-blue font-bold">
+                  🎯
+                </span>
+                <div>
+                  <h4 className="font-extrabold text-sm text-navy">Assess Retention</h4>
+                  <span className="text-[11px] text-slate-400">5-Question Diagnostic</span>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Finished studying Relative Speed? Test formula mastery in under 5 minutes to adapt tomorrow's queue.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/quiz')}
+                className="w-full py-2.5 rounded-xl bg-blue hover:bg-blue-600 text-white font-bold text-xs transition shadow-xs cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>Launch Diagnostic Quiz</span>
+                <ArrowRightIcon size={13} />
+              </button>
+            </div>
+          </BlurFade>
+        </div>
       </div>
 
       {/* Study Session Modal with AnimatePresence */}
@@ -544,29 +682,6 @@ export default function PlanPage() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* Proof of Work Prompt */}
-      <BlurFade delay={0.35}>
-        <div className="p-6 rounded-3xl bg-orange-50/70 border border-orange-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-sm">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-orange/15 flex items-center justify-center text-orange flex-shrink-0">
-              <FlameIcon size={20} className="text-orange" />
-            </div>
-            <div className="text-navy text-sm font-medium">
-              <strong className="font-extrabold text-navy">Finished your study block?</strong> Submit a 20-second notebook photo to bump your streak and update your squad feed.
-            </div>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate('/proof')}
-            className="px-5 py-3 rounded-2xl bg-orange text-white font-extrabold flex-shrink-0 hover:bg-orange/90 transition shadow-md shadow-orange/20 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-          >
-            <span>Submit Proof of Work</span>
-            <ArrowRightIcon size={13} />
-          </motion.button>
-        </div>
-      </BlurFade>
     </div>
   );
 }

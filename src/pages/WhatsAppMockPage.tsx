@@ -5,10 +5,10 @@ import { motion } from 'motion/react';
 
 export default function WhatsAppMockPage() {
   return (
-    <div className="space-y-8 max-w-2xl mx-auto">
+    <div className="space-y-8">
       {/* Header */}
       <BlurFade delay={0.05}>
-        <div className="pb-6 border-b border-slate-200">
+        <div className="pb-6 border-b border-slate-200/90">
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
               WhatsApp Delivery Channel Preview
@@ -24,21 +24,52 @@ export default function WhatsAppMockPage() {
         </div>
       </BlurFade>
 
-      {/* Stage Pitch Framing Banner */}
-      <BlurFade delay={0.1}>
-        <div className="p-5 rounded-2xl bg-navy text-white text-xs leading-relaxed space-y-1.5 shadow-sm border border-navy/40">
-          <span className="font-extrabold text-orange uppercase tracking-wider text-[11px] block">
-            Stage Script & Distribution Thesis
-          </span>
-          <p className="text-slate-200 text-sm font-medium">
-            "Aspirants in small towns do not open heavy discipline apps. They live inside WhatsApp. Here is the exact same daily loop running seamlessly over chat."
-          </p>
-        </div>
-      </BlurFade>
+      {/* 2-Column Responsive Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* LEFT COLUMN: Thesis & Touchpoints (6 cols) */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* Stage Pitch Framing Banner */}
+          <BlurFade delay={0.1}>
+            <div className="p-6 rounded-3xl bg-[#0B1F3A] text-white text-xs leading-relaxed space-y-2 shadow-xl shadow-navy/15 border border-blue-900/40">
+              <span className="font-extrabold text-orange uppercase tracking-wider text-[11px] block">
+                Stage Script & Distribution Thesis
+              </span>
+              <p className="text-slate-200 text-sm font-semibold leading-relaxed">
+                "Aspirants in small towns do not open heavy discipline apps. They live inside WhatsApp. Here is the exact same daily loop running seamlessly over chat."
+              </p>
+            </div>
+          </BlurFade>
 
-      {/* Mocked WhatsApp Chat Phone Frame */}
-      <BlurFade delay={0.15}>
-        <div className="bg-[#EFEAE2] rounded-3xl shadow-xl border-4 border-slate-700 overflow-hidden flex flex-col max-w-md mx-auto min-h-[600px]">
+          {/* Architecture Benefits */}
+          <BlurFade delay={0.15}>
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] p-6 sm:p-7 space-y-4">
+              <h3 className="font-extrabold text-base text-navy tracking-tight">The 4 Daily WhatsApp Touchpoints</h3>
+              <div className="space-y-3 text-xs">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="font-extrabold text-blue uppercase text-[10px] tracking-wider block">1. 08:00 AM — Morning Voice Note</span>
+                  <p className="text-slate-700 font-medium">Aspirant speaks today's intention in Hindi/English. Groq AI parses goals into minutes and topics.</p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="font-extrabold text-navy uppercase text-[10px] tracking-wider block">2. 08:15 AM — Adaptive Timetable</span>
+                  <p className="text-slate-700 font-medium">Bot replies with 3 prioritized tasks dynamically scheduled from measured diagnostic weak spots.</p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="font-extrabold text-amber-700 uppercase text-[10px] tracking-wider block">3. 01:30 PM — Midday Concept Check</span>
+                  <p className="text-slate-700 font-medium">Quick 5-minute diagnostic quiz link sent to verify formula retention under exam timing.</p>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                  <span className="font-extrabold text-orange uppercase text-[10px] tracking-wider block">4. 09:20 PM — 20-Sec Photo Proof</span>
+                  <p className="text-slate-700 font-medium">Aspirant snaps photo of rough scratchpad. AI plausibility check passes, streak increments, and squad is notified.</p>
+                </div>
+              </div>
+            </div>
+          </BlurFade>
+        </div>
+
+        {/* RIGHT COLUMN: Mocked WhatsApp Phone Frame (6 cols) */}
+        <div className="lg:col-span-6 space-y-6">
+          <BlurFade delay={0.2}>
+            <div className="bg-[#EFEAE2] rounded-3xl shadow-2xl border-4 border-slate-700 overflow-hidden flex flex-col max-w-md mx-auto min-h-[640px]">
           {/* WhatsApp Top Bar */}
           <div className="bg-[#075E54] text-white p-3.5 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2.5">
@@ -196,8 +227,10 @@ export default function WhatsAppMockPage() {
               <MicIcon size={16} />
             </div>
           </div>
-        </div>
-      </BlurFade>
+          </div>
+        </BlurFade>
+      </div>
     </div>
+  </div>
   );
 }

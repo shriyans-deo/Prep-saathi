@@ -543,10 +543,10 @@ export default function DashboardPage() {
                   <SpotlightCard
                     key={idx}
                     spotlightColor="rgba(37, 99, 235, 0.08)"
-                    className={`p-5 sm:p-6 rounded-2xl border transition-all shadow-sm hover:shadow-md ${
+                    className={`p-5 sm:p-6 rounded-2xl border transition-all ${
                       task.completed
-                        ? 'border-emerald-300 bg-emerald-50/20'
-                        : 'border-slate-200/90 bg-white hover:border-blue-400'
+                        ? 'border-emerald-300 bg-emerald-50/70 shadow-sm'
+                        : 'border-slate-200/90 bg-white hover:border-blue-400 shadow-sm'
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
