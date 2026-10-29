@@ -3,6 +3,12 @@ import { useAuth, DEMO_PROFILE } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { invokeAI } from '../lib/ai';
 import { AI_TASKS } from '../lib/constants';
+import {
+  SparklesIcon,
+  RefreshCwIcon,
+  AlertTriangleIcon,
+} from '../components/ui/Icons';
+import { Badge } from '../components/ui/Badge';
 
 interface TopicMastery {
   subject: string;
@@ -22,11 +28,11 @@ const SEEDED_MASTERY: TopicMastery[] = [
   // 3 Red (<40)
   { subject: 'Quantitative Aptitude', topic: 'Time, Speed and Distance', score: 32, status: 'weak' },
   { subject: 'Quantitative Aptitude', topic: 'Geometry and Mensuration', score: 35, status: 'weak' },
-  { subject: 'General Awareness', topic: 'Economics & Budget', score: 38, status: 'weak' },
+  { subject: 'General Awareness', topic: 'Economics & Union Budget', score: 38, status: 'weak' },
   // 5 Amber (40-70)
   { subject: 'Quantitative Aptitude', topic: 'Number System', score: 48, status: 'learning' },
   { subject: 'Quantitative Aptitude', topic: 'Time and Work', score: 55, status: 'learning' },
-  { subject: 'English', topic: 'Cloze Test', score: 58, status: 'learning' },
+  { subject: 'English', topic: 'Cloze Test & Phrasal Verbs', score: 58, status: 'learning' },
   { subject: 'Reasoning', topic: 'Syllogism', score: 62, status: 'learning' },
   { subject: 'General Awareness', topic: 'Indian Polity - Constitution', score: 65, status: 'learning' },
   // 4 Green (>70)
@@ -63,10 +69,10 @@ export default function ProgressPage() {
   const [masteryList, setMasteryList] = useState<TopicMastery[]>(SEEDED_MASTERY);
   const [heatmap] = useState<HeatmapDay[]>(SEEDED_HEATMAP);
   const [reflection, setReflection] = useState({
-    headline: "You planned 38 hours and executed 22 this week",
-    pattern: "Your execution gap concentrates on Thursday and Friday evenings",
-    win: "Syllogism accuracy jumped from 45% to 72% in diagnostic drills",
-    next_week_focus: "Lock in an unmovable 6:00 PM to 8:30 PM evening study block on weekdays",
+    headline: 'You planned 38 hours and executed 22 this week',
+    pattern: 'Your execution gap concentrates on Thursday and Friday evenings',
+    win: 'Syllogism accuracy jumped from 45% to 72% in diagnostic drills',
+    next_week_focus: 'Lock in an unmovable 6:00 PM to 8:30 PM evening study block on weekdays',
   });
   const [isGeneratingReflection, setIsGeneratingReflection] = useState(false);
 
@@ -131,91 +137,98 @@ export default function ProgressPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-grey/20">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-navy tracking-tight">
-            Progress & Mastery Intelligence
-          </h1>
-          <p className="text-xs text-grey mt-1">
-            Concept-level diagnostic metrics for {currentProfile.name} · {currentProfile.exam}. 30-day streak density and AI retrospective patterns.
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
+              Progress & Mastery Intelligence
+            </h1>
+            <Badge variant="neutral">
+              <span>{currentProfile.exam}</span>
+            </Badge>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Diagnostic concept metrics, 30-day streak density, and weekly AI behavioral retrospective.
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-semibold px-3 py-1 rounded-full bg-navy text-white">
-            {currentProfile.exam}
-          </span>
         </div>
       </div>
 
-      {/* 1. WEEKLY AI REFLECTION CARD (§6 Screen 9 & §5 Task 4) */}
-      <div className="bg-navy text-white rounded-2xl shadow-sm border border-navy/40 p-6 md:p-8 space-y-4 relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">✨</span>
+      {/* 1. WEEKLY AI REFLECTION CARD (§10 & §5 Task 4) */}
+      <div className="bg-navy text-white rounded-2xl shadow-sm border border-navy/40 p-6 sm:p-8 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue/20 border border-blue/30 flex items-center justify-center text-sky">
+              <SparklesIcon size={20} />
+            </div>
             <div>
-              <h2 className="text-base font-bold text-white">Sunday AI Execution Reflection</h2>
-              <p className="text-xs text-sky font-medium mt-0.5">{reflection.headline}</p>
+              <span className="text-xs font-bold uppercase tracking-wider text-sky block">
+                Sunday AI Execution Reflection
+              </span>
+              <h2 className="text-lg sm:text-xl font-extrabold text-white mt-0.5">{reflection.headline}</h2>
             </div>
           </div>
+
           <button
             type="button"
             disabled={isGeneratingReflection}
             onClick={handleRefreshReflection}
-            className="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition border border-white/20 self-start sm:self-auto disabled:opacity-50"
+            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/15 flex items-center gap-2 cursor-pointer self-start sm:self-auto disabled:opacity-50"
           >
-            {isGeneratingReflection ? 'Analyzing Pattern...' : '🔄 Re-analyze Week'}
+            <RefreshCwIcon size={13} className={isGeneratingReflection ? 'animate-spin' : ''} />
+            <span>{isGeneratingReflection ? 'Analyzing Pattern...' : 'Re-analyze Week'}</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-1">
-          {/* Pattern line (§5: "The pattern line is the single most quotable AI output in the product") */}
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
-            <span className="text-orange font-bold uppercase tracking-wider text-[10px] block">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          {/* Pattern line (§5 & §10: "The pattern line is the single most quotable AI output in the product") */}
+          <div className="p-4 sm:p-5 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
+            <span className="text-orange font-extrabold uppercase tracking-wider text-[11px] block">
               Behavioral Pattern Detected
             </span>
-            <p className="text-slate-200 font-medium leading-relaxed">
+            <p className="text-slate-200 font-semibold leading-relaxed text-sm">
               "{reflection.pattern}"
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
-            <span className="text-emerald-400 font-bold uppercase tracking-wider text-[10px] block">
+          <div className="p-4 sm:p-5 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
+            <span className="text-emerald-400 font-extrabold uppercase tracking-wider text-[11px] block">
               Measured Mastery Win
             </span>
-            <p className="text-slate-200 font-medium leading-relaxed">
+            <p className="text-slate-200 font-semibold leading-relaxed text-sm">
               "{reflection.win}"
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
-            <span className="text-sky font-bold uppercase tracking-wider text-[10px] block">
+          <div className="p-4 sm:p-5 rounded-xl bg-white/5 border border-white/10 space-y-1.5">
+            <span className="text-sky font-extrabold uppercase tracking-wider text-[11px] block">
               Next Week's Constraint Focus
             </span>
-            <p className="text-slate-200 font-medium leading-relaxed">
+            <p className="text-slate-200 font-semibold leading-relaxed text-sm">
               "{reflection.next_week_focus}"
             </p>
           </div>
         </div>
       </div>
 
-      {/* 2. TOPIC MASTERY BARS (§6 Screen 9 & §8 Chart 2) */}
-      <div className="bg-white rounded-2xl shadow-sm border border-grey/20 p-6 md:p-8 space-y-4">
+      {/* 2. TOPIC MASTERY BARS (§10 & §8 Chart 2) */}
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-5">
         <div>
-          {/* Framing required by spec (§6 Screen 9: "This answers the exact question your interviews showed aspirants cannot answer: name your three weakest topics. Put that framing on the screen.") */}
-          <span className="text-xs font-bold uppercase tracking-wider text-orange bg-orange/10 px-2.5 py-0.5 rounded-full border border-orange/20">
-            Aspirant Interview Framing
-          </span>
-          <h2 className="text-lg font-bold text-navy mt-1.5">
+          {/* Required Framing (§10: "Can you name your three weakest topics?") */}
+          <Badge variant="alert">
+            <AlertTriangleIcon size={12} className="text-orange" />
+            <span>Aspirant Interview Framing</span>
+          </Badge>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight mt-2">
             Can you name your three weakest topics?
           </h2>
-          <p className="text-xs text-grey mt-0.5">
+          <p className="text-xs text-slate-500 mt-1">
             Most aspirants cannot. PrepSaathi ranks all 12 syllabus topics ascending by score, dynamically highlighting where your next daily plan will focus.
           </p>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-semibold pt-1">
+        <div className="flex items-center gap-5 text-xs font-semibold pt-1 border-b border-slate-100 pb-3">
           <span className="flex items-center gap-1.5 text-red-600">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> Weak (&lt;40%)
           </span>
@@ -227,16 +240,16 @@ export default function ProgressPage() {
           </span>
         </div>
 
-        {/* Twelve Rows (§8 Chart 2: Horizontal bars, sorted ascending by score) */}
-        <div className="space-y-3 pt-2">
+        {/* 12 Rows sorted ascending by score (§8 Chart 2) */}
+        <div className="space-y-3 pt-1">
           {masteryList.map((m, idx) => (
-            <div key={idx} className="space-y-1">
+            <div key={idx} className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-navy truncate max-w-xs md:max-w-md">
-                  {idx < 3 && <span className="text-red-600 font-bold mr-1.5">#{idx + 1} Weakest:</span>}
-                  {m.topic} <span className="text-grey font-normal text-[11px]">({m.subject})</span>
+                <span className="font-semibold text-navy truncate max-w-sm sm:max-w-md">
+                  {idx < 3 && <span className="text-red-600 font-extrabold mr-1.5">#{idx + 1} Weakest:</span>}
+                  {m.topic} <span className="text-slate-400 font-normal text-[11px]">({m.subject})</span>
                 </span>
-                <span className="font-mono font-bold text-slate-700">{m.score}%</span>
+                <span className="font-mono font-bold text-slate-800 text-sm">{m.score}%</span>
               </div>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                 <div
@@ -255,52 +268,53 @@ export default function ProgressPage() {
         </div>
       </div>
 
-      {/* 3. 30-DAY STREAK HEATMAP (§6 Screen 9 & §8 Chart 3) */}
-      <div className="bg-white rounded-2xl shadow-sm border border-grey/20 p-6 md:p-8 space-y-4">
+      {/* 3. 30-DAY STREAK HEATMAP (§10 & §8 Chart 3) */}
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-5">
         <div>
-          <h2 className="text-lg font-bold text-navy">30-Day Execution Density Heatmap</h2>
-          <p className="text-xs text-grey mt-0.5">
-            30 cells in a 5×6 grid. Opacity scales with hours logged. Empty cells make gaps visibly obvious in a way a streak number never does.
+          <h2 className="text-lg sm:text-xl font-extrabold text-navy tracking-tight">
+            30-Day Execution Density Heatmap
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            30 cells in a 5×6 grid. Opacity scales with hours logged. Empty cells are visibly grey, making preparation gaps obvious.
           </p>
         </div>
 
         {/* 5x6 Grid (§8 Chart 3) */}
-        <div className="grid grid-cols-6 gap-2 pt-2">
+        <div className="grid grid-cols-6 gap-2.5 pt-2">
           {heatmap.map((cell, idx) => {
-            // Opacity scales with hours logged; empty is visibly grey
             const isZero = cell.hours === 0;
             const bgClass = isZero
-              ? 'bg-slate-200 text-slate-400'
+              ? 'bg-slate-200 text-slate-400 border-slate-200'
               : cell.hours < 3
-              ? 'bg-blue/30 text-blue font-semibold'
+              ? 'bg-blue/30 text-blue font-semibold border-blue/20'
               : cell.hours < 4.5
-              ? 'bg-blue/70 text-white font-bold'
-              : 'bg-blue text-white font-bold';
+              ? 'bg-blue/70 text-white font-bold border-blue/40'
+              : 'bg-blue text-white font-bold border-blue/60';
 
             return (
               <div
                 key={idx}
-                className={`p-3 rounded-xl border border-grey/15 text-center flex flex-col justify-between h-20 transition-all ${bgClass}`}
+                className={`p-3 rounded-xl border text-center flex flex-col justify-between h-20 transition-all ${bgClass}`}
               >
                 <span className="text-[10px] block opacity-80">{cell.label}</span>
-                <span className="font-mono text-sm tracking-tight">
+                <span className="font-mono text-sm tracking-tight font-extrabold">
                   {isZero ? 'Gap' : `${cell.hours}h`}
                 </span>
                 <span className="text-[9px] uppercase tracking-wider opacity-75">
-                  {isZero ? '0 hrs' : cell.hours >= 4.5 ? 'Full Target' : 'Partial'}
+                  {isZero ? '0 hrs' : cell.hours >= 4.5 ? 'Target Met' : 'Partial'}
                 </span>
               </div>
             );
           })}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-grey pt-2 border-t border-grey/15">
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
           <span>Less Execution</span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded bg-slate-200 border border-grey/20" />
-            <span className="w-3.5 h-3.5 rounded bg-blue/30" />
-            <span className="w-3.5 h-3.5 rounded bg-blue/70" />
-            <span className="w-3.5 h-3.5 rounded bg-blue" />
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded bg-slate-200 border border-slate-300" title="0h" />
+            <span className="w-3.5 h-3.5 rounded bg-blue/30" title="<3h" />
+            <span className="w-3.5 h-3.5 rounded bg-blue/70" title="3-4.5h" />
+            <span className="w-3.5 h-3.5 rounded bg-blue" title=">4.5h" />
           </div>
           <span>Target Met (&gt;4.5h)</span>
         </div>

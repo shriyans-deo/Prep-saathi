@@ -4,6 +4,15 @@ import { useAuth, DEMO_PROFILE } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { invokeAI } from '../lib/ai';
 import { AI_TASKS } from '../lib/constants';
+import {
+  QuizIcon,
+  CheckIcon,
+  ClockIcon,
+  RefreshCwIcon,
+  ArrowRightIcon,
+  AlertTriangleIcon,
+} from '../components/ui/Icons';
+import { Badge } from '../components/ui/Badge';
 
 interface Question {
   q: string;
@@ -106,7 +115,6 @@ export default function QuizPage() {
     setIsSubmitting(true);
     setActionNotice(null);
 
-    // Compute direct score
     let correctCount = 0;
     const qaPayload = questions.map((q, idx) => {
       const userAns = selectedAnswers[idx] || '';
@@ -136,10 +144,10 @@ export default function QuizPage() {
           'Relative motion vectors when objects move in the same direction',
         feedback:
           aiResponse?.feedback ||
-          'Your kinetic formulas are applied accurately for opposite directions, but when both bodies move forward, the sign convention must be (S1 - S2) rather than addition.',
+          'Your kinetic formulas are applied accurately for opposite directions, but when both bodies move in the same direction, the reference vector must be (S1 - S2).',
         mastery_delta: aiResponse?.mastery_delta ?? (correctCount >= 4 ? 6 : -8),
         remedial_task: aiResponse?.remedial_task || {
-          task: 'Solve 10 focused relative velocity chase problems',
+          task: 'Solve 10 focused relative velocity chase problems without shortcuts',
           minutes: 25,
         },
         retest_in_days: aiResponse?.retest_in_days || 3,
@@ -147,7 +155,7 @@ export default function QuizPage() {
 
       setQuizResult(result);
 
-      // Writeback to Supabase mastery table (§5 Task 2: "mastery_delta writes back to mastery.score")
+      // Writeback to Supabase mastery table (§5 Task 2)
       try {
         if (!isDemoUser && currentProfile.id) {
           // 1. Record quiz
@@ -159,7 +167,7 @@ export default function QuizPage() {
             ai_feedback: `${result.concept_gap}: ${result.feedback}`,
           });
 
-          // 2. Fetch existing topic and update mastery
+          // 2. Fetch topic and update mastery
           const { data: topicData } = await supabase
             .from('topics')
             .select('id')
@@ -191,13 +199,12 @@ export default function QuizPage() {
       }
     } catch (err) {
       console.error('Quiz feedback AI invocation error:', err);
-      // Spec-compliant fallback feedback (§5 Task 2)
       setQuizResult({
         score: correctCount,
         total: questions.length,
         concept_gap: 'Relative velocity vector calculations in pursuit scenarios',
         feedback:
-          'Formula application breaks down when both bodies move in the same direction. Focus on relative speed subtraction.',
+          'Formula application breaks down when both bodies move in the same direction. Practice two-step vector subtraction.',
         mastery_delta: -6,
         remedial_task: {
           task: 'Practice 10 relative-motion chase questions without shortcuts',
@@ -233,7 +240,7 @@ export default function QuizPage() {
           task: quizResult.remedial_task.task,
           minutes: quizResult.remedial_task.minutes,
           type: 'weak_topic',
-          why: `Remedial task triggered by quiz diagnostic gap: ${quizResult.concept_gap}`,
+          why: `Remedial task triggered by diagnostic gap: ${quizResult.concept_gap}`,
           completed: false,
         };
 
@@ -253,11 +260,11 @@ export default function QuizPage() {
     }
 
     setActionNotice(
-      `✓ Remedial task ("${quizResult.remedial_task.task}") has been queued in tomorrow's daily plan!`
+      `✓ Remedial task ("${quizResult.remedial_task.task}") has been queued into tomorrow's plan!`
     );
   };
 
-  // Button 2: Retry in 3 days (Spaced repetition SM-2 loop, §6 Screen 6)
+  // Button 2: Retry in 3 days (spaced repetition SM-2 loop, §6 Screen 6)
   const handleSpacedRetry = () => {
     setActionNotice(
       `✓ Spaced repetition scheduled: You will be re-tested on "${topicName}" in 3 days to verify retention.`
@@ -265,30 +272,33 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-8 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-grey/20">
+      <div className="flex items-center justify-between pb-6 border-b border-slate-200">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-grey">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">
             Diagnostic Assessment · {topicName}
           </span>
-          <h1 className="text-xl md:text-2xl font-bold text-navy mt-0.5">
-            5-Question Concept Diagnostic
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight mt-1">
+            5-Question Diagnostic Assessment
           </h1>
         </div>
-        <span className="text-xs bg-navy text-white px-3 py-1 rounded-full font-mono">
-          Under 24h Loop
-        </span>
+
+        <Badge variant="neutral">
+          <ClockIcon size={12} />
+          <span>Under 24h Loop</span>
+        </Badge>
       </div>
 
       {!quizResult ? (
-        /* QUIZ ACTIVE VIEW (§6 Screen 6: One question per screen, no back navigation, progress dots at the top) */
-        <div className="bg-white rounded-2xl shadow-sm border border-grey/20 p-6 md:p-8 space-y-6">
-          {/* Progress dots at the top */}
-          <div className="flex items-center justify-between pb-4 border-b border-grey/15">
-            <span className="text-xs font-bold text-navy">
+        /* QUIZ ACTIVE VIEW (§7: Centered question panel, progress dots at top, no back navigation) */
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-6">
+          {/* Progress dots at top */}
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <span className="text-xs font-bold text-navy uppercase tracking-wider">
               Question {currentIndex + 1} of {questions.length}
             </span>
+
             <div className="flex items-center gap-2">
               {questions.map((_, idx) => (
                 <div
@@ -298,16 +308,16 @@ export default function QuizPage() {
                       ? 'bg-blue scale-125 ring-2 ring-blue/30'
                       : selectedAnswers[idx]
                       ? 'bg-navy'
-                      : 'bg-grey/30'
+                      : 'bg-slate-200'
                   }`}
                 />
               ))}
             </div>
           </div>
 
-          {/* Question text */}
-          <div className="min-h-[90px]">
-            <p className="text-base md:text-lg font-bold text-navy leading-relaxed">
+          {/* Question Text */}
+          <div className="min-h-[90px] flex items-center">
+            <p className="text-base sm:text-lg font-bold text-navy leading-relaxed">
               {currentQ.q}
             </p>
           </div>
@@ -321,14 +331,14 @@ export default function QuizPage() {
                 <div
                   key={oIdx}
                   onClick={() => handleSelectOption(opt)}
-                  className={`p-4 rounded-xl border text-sm font-medium cursor-pointer transition flex items-center gap-3 ${
+                  className={`p-4 rounded-xl border text-sm font-semibold cursor-pointer transition-all flex items-center gap-3.5 ${
                     isSelected
-                      ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue font-semibold'
-                      : 'border-grey/25 bg-white text-slate-800 hover:border-grey hover:bg-slate-50'
+                      ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   <span
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
                       isSelected ? 'bg-blue text-white' : 'bg-slate-100 text-slate-600'
                     }`}
                   >
@@ -341,9 +351,9 @@ export default function QuizPage() {
           </div>
 
           {/* Forward Navigation Only */}
-          <div className="pt-4 flex items-center justify-between border-t border-grey/15">
-            <span className="text-[11px] text-grey">
-              Exam discipline active: No back navigation permitted
+          <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+            <span className="text-[11px] text-slate-400 font-medium">
+              Exam discipline active: Forward navigation only
             </span>
 
             {currentIndex < questions.length - 1 ? (
@@ -351,7 +361,7 @@ export default function QuizPage() {
                 type="button"
                 disabled={!selectedAnswers[currentIndex]}
                 onClick={handleNext}
-                className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-semibold text-xs shadow-sm transition disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 cursor-pointer"
               >
                 Next Question →
               </button>
@@ -360,7 +370,7 @@ export default function QuizPage() {
                 type="button"
                 disabled={!selectedAnswers[currentIndex] || isSubmitting}
                 onClick={handleSubmitQuiz}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
               >
                 {isSubmitting ? (
                   <>
@@ -375,36 +385,36 @@ export default function QuizPage() {
           </div>
         </div>
       ) : (
-        /* QUIZ FEEDBACK VIEW (§6 Screen 6: "concept-level feedback, not a score") */
-        <div className="bg-white rounded-2xl shadow-sm border border-grey/20 p-6 md:p-8 space-y-6">
-          {/* Header Score & Callout */}
-          <div className="p-5 rounded-2xl bg-navy text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        /* QUIZ FEEDBACK VIEW (§7: Structured feedback card with score, concept gap, AI feedback, remedial task, retry in 3 days) */
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-6">
+          {/* Header Outcome Box */}
+          <div className="p-6 rounded-2xl bg-navy text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-sky">
+              <span className="text-xs font-semibold uppercase tracking-wider text-sky block">
                 Diagnostic Outcome
               </span>
-              <h2 className="text-2xl font-black text-white mt-1">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
                 {quizResult.score} of {quizResult.total} Correct
               </h2>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Mastery Delta: <span className="text-orange font-bold font-mono">{quizResult.mastery_delta}%</span> writeback to your profile
+              <p className="text-xs text-slate-300 mt-1">
+                Mastery Delta: <span className="text-orange font-bold font-mono">{quizResult.mastery_delta}%</span> written to profile
               </p>
             </div>
 
-            <div className="p-3 rounded-xl bg-white/10 border border-white/10 text-center">
-              <span className="text-xs text-slate-300 block">Status Recalculated</span>
+            <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 text-center self-start sm:self-auto">
+              <span className="text-[11px] text-slate-300 uppercase tracking-wider block">Status Recalculated</span>
               <span className="text-sm font-bold text-orange">
                 Weak Topic (Requires Remediation)
               </span>
             </div>
           </div>
 
-          {/* CONCEPT-LEVEL FEEDBACK BOX (§6 Screen 6: "3 of 5. The pattern is relative motion in time–speed–distance, not percentages.") */}
-          <div className="p-5 rounded-2xl bg-orange/5 border-2 border-orange/30 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🎯</span>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-orange">
-                Identified Concept Gap: {quizResult.concept_gap}
+          {/* Concept Gap Feedback Box (§6 Screen 6: "The pattern is relative motion in time-speed-distance, not percentages") */}
+          <div className="p-5 sm:p-6 rounded-2xl bg-orange/5 border-2 border-orange/30 space-y-2.5">
+            <div className="flex items-center gap-2 text-orange">
+              <AlertTriangleIcon size={18} className="text-orange" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider">
+                Underlying Concept Gap: {quizResult.concept_gap}
               </h3>
             </div>
             <p className="text-sm text-slate-800 leading-relaxed font-medium">
@@ -413,35 +423,34 @@ export default function QuizPage() {
           </div>
 
           {actionNotice && (
-            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 animate-in fade-in">
-              {actionNotice}
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 animate-in fade-in flex items-center gap-2">
+              <CheckIcon size={14} className="text-emerald-700" />
+              <span>{actionNotice}</span>
             </div>
           )}
 
-          {/* TWO MANDATORY BUTTONS (§6 Screen 6) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            {/* Button 1: Add remedial task to tomorrow */}
+          {/* Action Buttons: Add Remedial Task & Retry in 3 Days */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
             <button
               type="button"
               onClick={handleAddRemedialTask}
-              className="py-3 px-4 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-2"
+              className="py-3 px-4 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>📋</span>
+              <QuizIcon size={16} />
               <span>Add Remedial Task to Tomorrow</span>
             </button>
 
-            {/* Button 2: Retry in 3 days (spaced repetition SM-2) */}
             <button
               type="button"
               onClick={handleSpacedRetry}
-              className="py-3 px-4 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-2"
+              className="py-3 px-4 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>🔄</span>
+              <RefreshCwIcon size={14} />
               <span>Retry in {quizResult.retest_in_days} Days (Spaced Retention)</span>
             </button>
           </div>
 
-          <div className="pt-4 border-t border-grey/15 flex justify-between items-center text-xs">
+          <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
             <button
               type="button"
               onClick={() => {
@@ -450,16 +459,17 @@ export default function QuizPage() {
                 setCurrentIndex(0);
                 setActionNotice(null);
               }}
-              className="text-grey hover:text-navy"
+              className="text-slate-500 hover:text-navy font-medium cursor-pointer"
             >
               ← Take Another Diagnostic
             </button>
             <button
               type="button"
               onClick={() => navigate('/plan')}
-              className="text-blue font-semibold hover:underline"
+              className="font-bold text-blue hover:underline flex items-center gap-1 cursor-pointer"
             >
-              Open Tomorrow's Updated Plan →
+              <span>View Tomorrow's Updated Plan</span>
+              <ArrowRightIcon size={12} />
             </button>
           </div>
         </div>

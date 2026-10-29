@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { CheckIcon, SparklesIcon, ArrowRightIcon } from '../components/ui/Icons';
+import { Badge } from '../components/ui/Badge';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -29,7 +31,6 @@ export default function AuthPage() {
         setErrorMsg(error.message);
         setLoading(false);
       } else {
-        // New user has no exam set yet -> redirect to Onboarding (§6 Screen 1)
         navigate('/onboarding');
       }
     } else {
@@ -50,92 +51,88 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-bg">
-      {/* Left panel: Product Promise (Spec §6 Screen 1) */}
-      <div className="w-full md:w-1/2 bg-navy text-white p-8 md:p-14 flex flex-col justify-between relative overflow-hidden">
-        {/* Background decorative gradient */}
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-orange/15 rounded-full blur-3xl pointer-events-none" />
-
+      {/* Left panel: Product Thesis & Daily Loop (§6 Screen 1) */}
+      <div className="w-full md:w-1/2 bg-navy text-white p-8 sm:p-12 md:p-16 flex flex-col justify-between relative overflow-hidden border-b md:border-b-0 md:border-r border-navy/40">
         <div>
-          <div className="flex items-center gap-2 mb-8">
-            <span className="w-9 h-9 rounded-lg bg-blue flex items-center justify-center font-bold text-lg text-white">
+          <div className="flex items-center gap-2.5 mb-10">
+            <span className="w-9 h-9 rounded-xl bg-blue flex items-center justify-center font-bold text-base text-white shadow-xs">
               PS
             </span>
-            <span className="text-2xl font-bold tracking-tight text-white">PrepSaathi</span>
-            <span className="text-xs bg-orange/20 text-orange px-2 py-0.5 rounded-full font-medium ml-2 border border-orange/30">
-              Innov-a-thon 2.0
-            </span>
+            <span className="text-2xl font-extrabold tracking-tight text-white">PrepSaathi</span>
+            <Badge variant="primary" className="ml-2 bg-blue/20 text-sky border-blue/30">
+              Execution Partner
+            </Badge>
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4 tracking-tight">
             The Execution Engine for Indian Government Exams
           </h1>
-          <p className="text-grey text-base md:text-lg mb-8 leading-relaxed">
+          <p className="text-slate-300 text-sm sm:text-base mb-8 leading-relaxed font-normal">
             Content is solved. YouTube is free. The binding constraint is execution.
             PrepSaathi makes your execution gap visible daily and adapts tomorrow's plan based on what you actually did today.
           </p>
 
-          {/* Key thesis callout */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
-            <p className="text-xs font-semibold uppercase tracking-wider text-sky mb-1">The Daily Loop</p>
-            <p className="text-sm text-slate-200">
+          {/* The Daily Loop Framing Card */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8 space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-sky block">The Daily Closed Loop</span>
+            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
               Plan → Study → Log Execution → Diagnostic Quiz → Mastery Update → Proof Submission → Tomorrow's Plan Changes.
             </p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue/20 flex items-center justify-center text-blue flex-shrink-0 mt-0.5">
-                ✓
-              </div>
-              <p className="text-sm text-slate-300">
+              <span className="w-5 h-5 rounded-full bg-blue/20 text-sky flex items-center justify-center flex-shrink-0 mt-0.5">
+                <CheckIcon size={12} />
+              </span>
+              <p className="text-xs sm:text-sm text-slate-300">
                 <strong className="text-white">Execution Gap Tracking:</strong> Measure planned vs executed hours daily, not just test scores.
               </p>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue/20 flex items-center justify-center text-blue flex-shrink-0 mt-0.5">
-                ✓
-              </div>
-              <p className="text-sm text-slate-300">
+              <span className="w-5 h-5 rounded-full bg-blue/20 text-sky flex items-center justify-center flex-shrink-0 mt-0.5">
+                <CheckIcon size={12} />
+              </span>
+              <p className="text-xs sm:text-sm text-slate-300">
                 <strong className="text-white">Grounded AI Planning:</strong> Daily plans built from your weakest mastery scores, adjusting down if yesterday fell below 60%.
               </p>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue/20 flex items-center justify-center text-blue flex-shrink-0 mt-0.5">
-                ✓
-              </div>
-              <p className="text-sm text-slate-300">
+              <span className="w-5 h-5 rounded-full bg-blue/20 text-sky flex items-center justify-center flex-shrink-0 mt-0.5">
+                <CheckIcon size={12} />
+              </span>
+              <p className="text-xs sm:text-sm text-slate-300">
                 <strong className="text-white">Own-Notes Ingestion:</strong> Upload your coaching PDFs to detect syllabus overlaps and generate targeted quizzes.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-grey">
+        <div className="mt-12 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-mono">
           <span>SSC CGL · UPSC CSE · IBPS PO</span>
           <span>Tier 2–3 First</span>
         </div>
       </div>
 
       {/* Right panel: Auth Form */}
-      <div className="w-full md:w-1/2 p-8 md:p-14 flex items-center justify-center">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-navy">
+      <div className="w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex items-center justify-center">
+        <div className="w-full max-w-md space-y-6">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
               {isSignUp ? 'Create your aspirant account' : 'Welcome back'}
             </h2>
-            <p className="text-sm text-grey mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
               {isSignUp
-                ? 'Join thousands of serious aspirants closing their daily execution gap.'
+                ? 'Join serious aspirants closing their daily execution gap.'
                 : 'Enter your credentials to access your daily plan and squad.'}
             </p>
           </div>
 
           {errorMsg && (
-            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-start gap-2">
-              <span className="font-bold">Error:</span>
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2">
+              <strong className="font-bold">Error:</strong>
               <span>{errorMsg}</span>
             </div>
           )}
@@ -143,7 +140,7 @@ export default function AuthPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
               <div>
-                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
                   Full Name
                 </label>
                 <input
@@ -151,14 +148,14 @@ export default function AuthPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Priya Sharma"
-                  className="w-full px-4 py-2.5 rounded-lg border border-grey/30 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
                   required={isSignUp}
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
                 Email Address
               </label>
               <input
@@ -166,13 +163,13 @@ export default function AuthPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="aspirant@example.com"
-                className="w-full px-4 py-2.5 rounded-lg border border-grey/30 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
                 Password
               </label>
               <input
@@ -180,7 +177,7 @@ export default function AuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-2.5 rounded-lg border border-grey/30 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
                 required
                 minLength={6}
               />
@@ -189,7 +186,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 rounded-lg bg-blue hover:bg-blue/90 text-white font-medium text-sm transition shadow-sm disabled:opacity-50 mt-2"
+              className="w-full py-3.5 px-4 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs sm:text-sm transition shadow-xs disabled:opacity-50 mt-2 cursor-pointer"
             >
               {loading
                 ? 'Processing...'
@@ -199,8 +196,8 @@ export default function AuthPage() {
             </button>
           </form>
 
-          <div className="mt-6 flex items-center justify-between text-sm">
-            <span className="text-grey">
+          <div className="flex items-center justify-between text-xs sm:text-sm pt-2">
+            <span className="text-slate-500">
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}
             </span>
             <button
@@ -209,36 +206,41 @@ export default function AuthPage() {
                 setIsSignUp(!isSignUp);
                 setErrorMsg(null);
               }}
-              className="text-blue font-semibold hover:underline"
+              className="text-blue font-bold hover:underline cursor-pointer"
             >
               {isSignUp ? 'Log In' : 'Sign Up'}
             </button>
           </div>
 
-          <div className="relative my-8">
+          <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-grey/20" />
+              <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-bg px-2 text-grey">Prototype Demonstration</span>
+              <span className="bg-bg px-3 text-slate-400 font-semibold tracking-wider">
+                Live Demonstration Mode
+              </span>
             </div>
           </div>
 
-          {/* Quick Demo Mode for Stage/Judges (§9 of spec) */}
-          <div className="p-4 rounded-xl bg-blue/5 border border-blue/20 text-center">
-            <p className="text-xs font-medium text-navy mb-2">
-              Innov-a-thon Pitch Mode (Pre-populated SSC CGL Demo Account)
-            </p>
+          {/* Quick Demo Launch Button */}
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs text-center space-y-2.5">
+            <div className="flex items-center justify-center gap-2">
+              <SparklesIcon size={15} className="text-blue" />
+              <span className="text-xs font-bold text-navy">
+                Walkthrough with Pre-Seeded Account
+              </span>
+            </div>
             <button
               type="button"
               onClick={handleDemoLogin}
-              className="w-full py-2.5 px-4 rounded-lg bg-navy hover:bg-navy/90 text-white font-medium text-xs transition shadow-sm flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>🚀</span>
-              <span>Launch Demo Account (Priya Sharma · 12-day streak)</span>
+              <span>Launch Demo Account (Priya Sharma · 12d streak)</span>
+              <ArrowRightIcon size={12} />
             </button>
-            <p className="text-[11px] text-grey mt-2">
-              Seeded with 30-day narrowing gap, 12 mastery topics, 4 quizzes, and pre-mapped documents.
+            <p className="text-[11px] text-slate-400">
+              Pre-seeded with 30 days of narrowing execution gap, 12 mastery topics, and 4 quizzes.
             </p>
           </div>
         </div>

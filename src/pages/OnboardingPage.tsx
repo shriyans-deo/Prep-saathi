@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { EXAMS, CITY_TIERS, MASTERY } from '../lib/constants';
+import { CheckIcon, FlameIcon, ArrowRightIcon, FlagIcon } from '../components/ui/Icons';
+import { Badge } from '../components/ui/Badge';
 
 const SUBJECT_OPTIONS: Record<string, string[]> = {
   'SSC CGL': [
-    'Quantitative Aptitude - Arithmetic',
+    'Quantitative Aptitude - Arithmetic & Percentages',
     'Quantitative Aptitude - Advanced (Geometry & Algebra)',
     'Logical & Analytical Reasoning',
     'English Comprehension & Vocabulary',
@@ -15,15 +17,15 @@ const SUBJECT_OPTIONS: Record<string, string[]> = {
   ],
   'UPSC CSE': [
     'Indian Polity & Constitution',
-    'Modern Indian History & Culture',
-    'Geography & Environment',
-    'Indian Economy & Budget',
-    'General Science & Technology',
+    'Modern Indian History & Freedom Struggle',
+    'Physical & Indian Geography',
+    'Indian Economy & Union Budget',
+    'Environment & Biodiversity',
     'CSAT - Quantitative & Reasoning',
   ],
   'IBPS PO': [
     'Quantitative Aptitude & Data Interpretation',
-    'Reasoning Ability & Puzzles',
+    'Reasoning Ability & Analytical Puzzles',
     'English Language & Reading Comprehension',
     'Banking Awareness & Financial GK',
     'Computer Knowledge',
@@ -100,7 +102,6 @@ export default function OnboardingPage() {
       setWeakSubjects(weakSubjects.filter((s) => s !== subj));
     } else {
       if (weakSubjects.length >= 3) {
-        // Keep maximum of 3 per spec
         setWeakSubjects([...weakSubjects.slice(1), subj]);
       } else {
         setWeakSubjects([...weakSubjects, subj]);
@@ -155,7 +156,7 @@ export default function OnboardingPage() {
               total_points: profile?.total_points || 50,
             });
         } catch (e) {
-          console.warn('Profile update deferred:', e);
+          console.warn('Profile update note:', e);
         }
 
         // 3. Seed mastery for topics based on selected weak subjects (§6 Screen 2)
@@ -166,7 +167,7 @@ export default function OnboardingPage() {
             .eq('exam', exam);
 
           if (topics && topics.length > 0) {
-            const masteryInserts = topics.map((t) => {
+            const masteryInserts = topics.map((t: any) => {
               const isWeak = weakSubjects.some(
                 (w) =>
                   w.toLowerCase().includes(t.subject.toLowerCase()) ||
@@ -186,11 +187,10 @@ export default function OnboardingPage() {
               .upsert(masteryInserts, { onConflict: 'user_id,topic_id' });
           }
         } catch (e) {
-          console.warn('Mastery seeding deferred:', e);
+          console.warn('Mastery seeding note:', e);
         }
       }
 
-      // Update local profile state
       updateProfileState({
         exam,
         attempt_number: attemptNumber,
@@ -209,47 +209,49 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col justify-center items-center p-4 py-8">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-grey/20 overflow-hidden">
-        {/* Top Progress Bar (§6 Screen 2: Progress bar across the top. No skip button) */}
-        <div className="bg-navy p-6 text-white">
-          <div className="flex items-center justify-between text-xs text-sky mb-2">
-            <span className="font-semibold uppercase tracking-wider">Aspirant Diagnostic Setup</span>
-            <span className="font-mono">Step {step} of 3</span>
+    <div className="min-h-screen bg-bg flex flex-col justify-center items-center p-4 py-10">
+      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Top Progress Header (§6 Screen 2: Progress bar across top. No skip button) */}
+        <div className="bg-navy p-6 sm:p-7 text-white">
+          <div className="flex items-center justify-between text-xs text-sky mb-2.5">
+            <span className="font-bold uppercase tracking-wider">Aspirant Diagnostic Baseline</span>
+            <span className="font-mono font-semibold">Step {step} of 3</span>
           </div>
           <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
             <div
-              className="bg-blue h-full transition-all duration-300"
+              className="bg-blue h-full transition-all duration-300 rounded-full"
               style={{ width: `${(step / 3) * 100}%` }}
             />
           </div>
         </div>
 
-        <div className="p-6 md:p-8">
+        <div className="p-6 sm:p-8 md:p-10">
           {/* STEP 1: Exam & Attempt */}
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-navy">Step 1: Your Target Exam & Background</h2>
-                <p className="text-xs text-grey mt-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
+                  Step 1: Target Exam & Background
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
                   PrepSaathi configures your syllabus topics and peer squad based on your exam.
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2.5">
                   Select Exam
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {EXAMS.map((item) => (
                     <button
                       key={item}
                       type="button"
                       onClick={() => setExam(item)}
-                      className={`p-3 rounded-xl border text-xs font-medium text-left transition-all ${
+                      className={`p-3.5 rounded-xl border text-xs font-bold text-left transition cursor-pointer ${
                         exam === item
-                          ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue font-semibold'
-                          : 'border-grey/30 bg-white text-navy hover:border-grey'
+                          ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue'
+                          : 'border-slate-200 bg-white text-navy hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
                       {item}
@@ -258,7 +260,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2">
                     Attempt Number
@@ -269,10 +271,10 @@ export default function OnboardingPage() {
                         key={num}
                         type="button"
                         onClick={() => setAttemptNumber(num)}
-                        className={`flex-1 py-2.5 rounded-lg border text-xs font-medium transition ${
+                        className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
                           attemptNumber === num
-                            ? 'bg-navy text-white border-navy font-semibold'
-                            : 'border-grey/30 bg-white text-navy hover:bg-slate-50'
+                            ? 'bg-navy text-white border-navy'
+                            : 'border-slate-200 bg-white text-navy hover:bg-slate-50'
                         }`}
                       >
                         {num === 1 ? '1st' : num === 2 ? '2nd' : num === 3 ? '3rd' : '4+'}
@@ -288,7 +290,7 @@ export default function OnboardingPage() {
                   <select
                     value={cityTier}
                     onChange={(e) => setCityTier(e.target.value)}
-                    className="w-full py-2.5 px-3 rounded-lg border border-grey/30 bg-white text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue"
+                    className="w-full py-2.5 px-3 rounded-xl border border-slate-300 bg-white text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue"
                   >
                     {CITY_TIERS.map((tier) => (
                       <option key={tier.value} value={tier.value}>
@@ -303,9 +305,10 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-6 py-2.5 rounded-lg bg-blue hover:bg-blue/90 text-white font-medium text-xs transition"
+                  className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                 >
-                  Continue to Daily Target →
+                  <span>Continue to Daily Target</span>
+                  <ArrowRightIcon size={12} />
                 </button>
               </div>
             </div>
@@ -315,19 +318,21 @@ export default function OnboardingPage() {
           {step === 2 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-navy">Step 2: Study Capacity & Diagnostic Baseline</h2>
-                <p className="text-xs text-grey mt-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
+                  Step 2: Study Capacity & Diagnostic Baseline
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
                   Pick your target hours and 3 hardest areas. This seeds your baseline mastery so your initial plan is non-generic.
                 </p>
               </div>
 
               {/* Slider 2–12 (§6 Step 2) */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-grey/20">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-navy uppercase tracking-wider">
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-navy uppercase tracking-wider">
                     Daily Planned Study Hours
-                  </label>
-                  <span className="text-lg font-bold text-blue">{dailyTargetHrs} hrs/day</span>
+                  </span>
+                  <span className="text-xl font-extrabold text-blue font-mono">{dailyTargetHrs} hrs/day</span>
                 </div>
                 <input
                   type="range"
@@ -338,8 +343,8 @@ export default function OnboardingPage() {
                   onChange={(e) => setDailyTargetHrs(parseFloat(e.target.value))}
                   className="w-full accent-blue cursor-pointer"
                 />
-                <div className="flex justify-between text-[11px] text-grey mt-1">
-                  <span>2 hours (Working)</span>
+                <div className="flex justify-between text-[11px] text-slate-400 font-medium pt-1">
+                  <span>2 hours (Working Aspirant)</span>
                   <span>6 hours (Standard Full-Time)</span>
                   <span>12 hours (Intensive)</span>
                 </div>
@@ -347,18 +352,18 @@ export default function OnboardingPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-navy uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-navy uppercase tracking-wider">
                     Pick 3 Subjects You Find Hardest
-                  </label>
+                  </span>
                   <span
-                    className={`text-xs font-medium ${
-                      weakSubjects.length === 3 ? 'text-emerald-600' : 'text-orange'
+                    className={`text-xs font-bold ${
+                      weakSubjects.length === 3 ? 'text-emerald-700' : 'text-orange'
                     }`}
                   >
                     {weakSubjects.length} of 3 selected
                   </span>
                 </div>
-                <p className="text-[11px] text-grey mb-3">
+                <p className="text-[11px] text-slate-400 mb-3">
                   Weak topics are seeded at 30% mastery score to force remedial scheduling; others start at 60%.
                 </p>
 
@@ -369,19 +374,19 @@ export default function OnboardingPage() {
                       <div
                         key={subj}
                         onClick={() => toggleSubject(subj)}
-                        className={`p-3 rounded-lg border text-xs cursor-pointer flex items-center justify-between transition ${
+                        className={`p-3.5 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all ${
                           isSelected
-                            ? 'border-orange bg-orange/5 text-navy font-medium'
-                            : 'border-grey/20 bg-white text-slate-700 hover:bg-slate-50'
+                            ? 'border-orange bg-orange/5 text-navy font-bold'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                         }`}
                       >
                         <span>{subj}</span>
                         <span
-                          className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
-                            isSelected ? 'bg-orange text-white' : 'border border-grey/30'
+                          className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                            isSelected ? 'bg-orange text-white' : 'border border-slate-300'
                           }`}
                         >
-                          {isSelected ? '✓' : ''}
+                          {isSelected && <CheckIcon size={11} />}
                         </span>
                       </div>
                     );
@@ -389,11 +394,11 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              <div className="pt-4 flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="px-4 py-2 rounded-lg border border-grey/30 text-xs text-grey hover:text-navy"
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs text-slate-600 hover:text-navy font-medium cursor-pointer"
                 >
                   ← Back
                 </button>
@@ -401,63 +406,67 @@ export default function OnboardingPage() {
                   type="button"
                   disabled={weakSubjects.length === 0}
                   onClick={() => setStep(3)}
-                  className="px-6 py-2.5 rounded-lg bg-blue hover:bg-blue/90 text-white font-medium text-xs transition disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
                 >
-                  Continue to Squad Match →
+                  <span>Continue to Squad Match</span>
+                  <ArrowRightIcon size={12} />
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 3: Auto-join Squad matching exam (§6 Step 3) */}
+          {/* STEP 3: Auto-join Squad matching exam */}
           {step === 3 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-navy">Step 3: Accountability Squad Match</h2>
-                <p className="text-xs text-grey mt-1">
-                  You are being matched into a 6-member squad of serious {exam} aspirants.
+                <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
+                  Step 3: Accountability Squad Match
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  You are being matched into a 6-member cohort of serious {exam} aspirants.
                 </p>
               </div>
 
               {/* Squad Preview Card */}
-              <div className="p-5 rounded-xl border border-blue/20 bg-blue/5">
-                <div className="flex items-center justify-between pb-3 border-b border-blue/15 mb-3">
+              <div className="p-5 rounded-2xl border border-blue/20 bg-blue/5 space-y-3.5">
+                <div className="flex items-center justify-between pb-3 border-b border-blue/15">
                   <div>
                     <h3 className="font-bold text-sm text-navy">{squadPreview.name}</h3>
-                    <p className="text-[11px] text-grey">Exam: {exam} · 6 members</p>
+                    <p className="text-[11px] text-slate-500">Exam: {exam} · 6 members</p>
                   </div>
-                  <span className="text-[10px] bg-blue/20 text-blue px-2 py-0.5 rounded-full font-medium">
-                    Auto-Matched
-                  </span>
+                  <Badge variant="primary">Auto-Matched</Badge>
                 </div>
 
-                <p className="text-xs text-slate-600 mb-3">
-                  You are joining 5 pseudonymous peers. Your daily check-in is visible to them to create healthy social commitment and loss aversion:
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Your daily check-in is visible to 5 peers to create healthy social commitment and loss aversion:
                 </p>
 
                 <div className="space-y-2">
                   {squadPreview.members.map((m, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-grey/15 text-xs"
+                      className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 text-xs"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center font-mono text-[10px] text-navy font-bold">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-mono text-[10px] text-navy font-bold">
                           {String.fromCharCode(65 + idx)}
                         </span>
-                        <span className="font-medium text-navy">{m.name}</span>
+                        <span className="font-semibold text-navy">{m.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-orange font-semibold">🔥 {m.streak}d</span>
-                        <span className="text-[11px] text-grey">{m.status}</span>
+                        <span className="text-orange font-bold flex items-center gap-1">
+                          <FlameIcon size={11} className="text-orange" />
+                          <span>{m.streak}d</span>
+                        </span>
+                        <span className="text-[11px] text-slate-400">{m.status}</span>
                       </div>
                     </div>
                   ))}
 
                   {/* User entry */}
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-blue/10 border border-blue/30 text-xs font-semibold text-blue">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-blue text-white flex items-center justify-center font-mono text-[10px]">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-blue/10 border border-blue/30 text-xs font-bold text-blue">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-lg bg-blue text-white flex items-center justify-center font-mono text-[10px]">
                         YOU
                       </span>
                       <span>{profile?.name || 'You (New Member)'}</span>
@@ -467,15 +476,18 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-orange/10 border border-orange/20 text-xs text-orange-900">
-                <strong>Loss aversion active:</strong> If you miss submitting today's study proof by 23:59, a red flag is displayed next to your entry in the squad board.
+              <div className="p-3.5 rounded-xl bg-orange/10 border border-orange/20 text-xs text-orange-950 flex items-center gap-2.5">
+                <FlagIcon size={16} className="text-orange flex-shrink-0" />
+                <span className="leading-relaxed">
+                  <strong>Loss aversion active:</strong> If you miss submitting today's study proof by 23:59, a red flag is displayed next to your entry in the squad board.
+                </span>
               </div>
 
-              <div className="pt-4 flex items-center justify-between">
+              <div className="pt-4 flex items-center justify-between border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-4 py-2 rounded-lg border border-grey/30 text-xs text-grey hover:text-navy"
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs text-slate-600 hover:text-navy font-medium cursor-pointer"
                 >
                   ← Back
                 </button>
@@ -483,7 +495,7 @@ export default function OnboardingPage() {
                   type="button"
                   disabled={submitting}
                   onClick={handleFinishOnboarding}
-                  className="px-6 py-2.5 rounded-lg bg-blue hover:bg-blue/90 text-white font-medium text-xs transition disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
                 >
                   {submitting ? (
                     <>
@@ -491,7 +503,10 @@ export default function OnboardingPage() {
                       <span>Generating Baseline Plan...</span>
                     </>
                   ) : (
-                    <span>Complete Setup & Open Dashboard →</span>
+                    <>
+                      <span>Complete Setup & Open Dashboard</span>
+                      <ArrowRightIcon size={12} />
+                    </>
                   )}
                 </button>
               </div>
