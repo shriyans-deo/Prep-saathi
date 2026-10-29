@@ -5,6 +5,11 @@ import { supabase } from '../lib/supabase';
 import { EXAMS, CITY_TIERS, MASTERY } from '../lib/constants';
 import { CheckIcon, FlameIcon, ArrowRightIcon, FlagIcon } from '../components/ui/Icons';
 import { Badge } from '../components/ui/Badge';
+import { BorderBeam } from '../components/magicui/BorderBeam';
+import { SpotlightCard } from '../components/reactbits/SpotlightCard';
+import { ClickSpark } from '../components/reactbits/ClickSpark';
+import { NumberTicker } from '../components/magicui/NumberTicker';
+import { motion, AnimatePresence } from 'motion/react';
 
 const SUBJECT_OPTIONS: Record<string, string[]> = {
   'SSC CGL': [
@@ -81,12 +86,10 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [submitting, setSubmitting] = useState(false);
 
-  // Step 1 State (§6 Screen 2)
   const [exam, setExam] = useState<string>(profile?.exam || 'SSC CGL');
   const [attemptNumber, setAttemptNumber] = useState<number>(profile?.attempt_number || 1);
   const [cityTier, setCityTier] = useState<string>(profile?.city_tier || 'tier2');
 
-  // Step 2 State (§6 Screen 2)
   const [dailyTargetHrs, setDailyTargetHrs] = useState<number>(profile?.daily_target_hrs || 6);
   const [weakSubjects, setWeakSubjects] = useState<string[]>([
     'Quantitative Aptitude - Advanced (Geometry & Algebra)',
@@ -113,7 +116,6 @@ export default function OnboardingPage() {
     setSubmitting(true);
     try {
       if (user?.id) {
-        // 1. Create or join squad
         let squadId = profile?.squad_id;
         try {
           const { data: existingSquad } = await supabase
@@ -140,7 +142,6 @@ export default function OnboardingPage() {
           console.warn('Squad assignment fallback:', e);
         }
 
-        // 2. Update user profile
         try {
           await supabase
             .from('profiles')
@@ -159,7 +160,6 @@ export default function OnboardingPage() {
           console.warn('Profile update note:', e);
         }
 
-        // 3. Seed mastery for topics based on selected weak subjects (§6 Screen 2)
         try {
           const { data: topics } = await supabase
             .from('topics')
@@ -211,307 +211,352 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-bg flex flex-col justify-center items-center p-4 py-10">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Top Progress Header (§6 Screen 2: Progress bar across top. No skip button) */}
+        {/* Top Progress Header */}
         <div className="bg-navy p-6 sm:p-7 text-white">
           <div className="flex items-center justify-between text-xs text-sky mb-2.5">
             <span className="font-bold uppercase tracking-wider">Aspirant Diagnostic Baseline</span>
             <span className="font-mono font-semibold">Step {step} of 3</span>
           </div>
           <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-            <div
-              className="bg-blue h-full transition-all duration-300 rounded-full"
-              style={{ width: `${(step / 3) * 100}%` }}
+            <motion.div
+              className="bg-blue h-full rounded-full"
+              initial={{ width: '33%' }}
+              animate={{ width: `${(step / 3) * 100}%` }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
             />
           </div>
         </div>
 
         <div className="p-6 sm:p-8 md:p-10">
-          {/* STEP 1: Exam & Attempt */}
-          {step === 1 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
-                  Step 1: Target Exam & Background
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  PrepSaathi configures your syllabus topics and peer squad based on your exam.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2.5">
-                  Select Exam
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {EXAMS.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setExam(item)}
-                      className={`p-3.5 rounded-xl border text-xs font-bold text-left transition cursor-pointer ${
-                        exam === item
-                          ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue'
-                          : 'border-slate-200 bg-white text-navy hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <AnimatePresence mode="wait">
+            {/* STEP 1: Exam & Attempt */}
+            {step === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-6"
+              >
                 <div>
-                  <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2">
-                    Attempt Number
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
+                    Step 1: Target Exam & Background
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    PrepSaathi configures your syllabus topics and peer squad based on your exam.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2.5">
+                    Select Exam
                   </label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4].map((num) => (
-                      <button
-                        key={num}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {EXAMS.map((item) => (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        key={item}
                         type="button"
-                        onClick={() => setAttemptNumber(num)}
-                        className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                          attemptNumber === num
-                            ? 'bg-navy text-white border-navy'
-                            : 'border-slate-200 bg-white text-navy hover:bg-slate-50'
+                        onClick={() => setExam(item)}
+                        className={`p-3.5 rounded-xl border text-xs font-bold text-left transition cursor-pointer ${
+                          exam === item
+                            ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue'
+                            : 'border-slate-200 bg-white text-navy hover:border-slate-300 hover:bg-slate-50'
                         }`}
                       >
-                        {num === 1 ? '1st' : num === 2 ? '2nd' : num === 3 ? '3rd' : '4+'}
-                      </button>
+                        {item}
+                      </motion.button>
                     ))}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2">
-                    City Location (Tier)
-                  </label>
-                  <select
-                    value={cityTier}
-                    onChange={(e) => setCityTier(e.target.value)}
-                    className="w-full py-2.5 px-3 rounded-xl border border-slate-300 bg-white text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue"
-                  >
-                    {CITY_TIERS.map((tier) => (
-                      <option key={tier.value} value={tier.value}>
-                        {tier.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>Continue to Daily Target</span>
-                  <ArrowRightIcon size={12} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: Daily Target Hours & Hardest Subjects */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
-                  Step 2: Study Capacity & Diagnostic Baseline
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Pick your target hours and 3 hardest areas. This seeds your baseline mastery so your initial plan is non-generic.
-                </p>
-              </div>
-
-              {/* Slider 2–12 (§6 Step 2) */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-navy uppercase tracking-wider">
-                    Daily Planned Study Hours
-                  </span>
-                  <span className="text-xl font-extrabold text-blue font-mono">{dailyTargetHrs} hrs/day</span>
-                </div>
-                <input
-                  type="range"
-                  min={2}
-                  max={12}
-                  step={0.5}
-                  value={dailyTargetHrs}
-                  onChange={(e) => setDailyTargetHrs(parseFloat(e.target.value))}
-                  className="w-full accent-blue cursor-pointer"
-                />
-                <div className="flex justify-between text-[11px] text-slate-400 font-medium pt-1">
-                  <span>2 hours (Working Aspirant)</span>
-                  <span>6 hours (Standard Full-Time)</span>
-                  <span>12 hours (Intensive)</span>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-navy uppercase tracking-wider">
-                    Pick 3 Subjects You Find Hardest
-                  </span>
-                  <span
-                    className={`text-xs font-bold ${
-                      weakSubjects.length === 3 ? 'text-emerald-700' : 'text-orange'
-                    }`}
-                  >
-                    {weakSubjects.length} of 3 selected
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 mb-3">
-                  Weak topics are seeded at 30% mastery score to force remedial scheduling; others start at 60%.
-                </p>
-
-                <div className="space-y-2">
-                  {availableSubjects.map((subj) => {
-                    const isSelected = weakSubjects.includes(subj);
-                    return (
-                      <div
-                        key={subj}
-                        onClick={() => toggleSubject(subj)}
-                        className={`p-3.5 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all ${
-                          isSelected
-                            ? 'border-orange bg-orange/5 text-navy font-bold'
-                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span>{subj}</span>
-                        <span
-                          className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                            isSelected ? 'bg-orange text-white' : 'border border-slate-300'
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2">
+                      Attempt Number
+                    </label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setAttemptNumber(num)}
+                          className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                            attemptNumber === num
+                              ? 'bg-navy text-white border-navy'
+                              : 'border-slate-200 bg-white text-navy hover:bg-slate-50'
                           }`}
                         >
-                          {isSelected && <CheckIcon size={11} />}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                          {num === 1 ? '1st' : num === 2 ? '2nd' : num === 3 ? '3rd' : '4+'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="pt-4 flex items-center justify-between border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs text-slate-600 hover:text-navy font-medium cursor-pointer"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="button"
-                  disabled={weakSubjects.length === 0}
-                  onClick={() => setStep(3)}
-                  className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>Continue to Squad Match</span>
-                  <ArrowRightIcon size={12} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: Auto-join Squad matching exam */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
-                  Step 3: Accountability Squad Match
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  You are being matched into a 6-member cohort of serious {exam} aspirants.
-                </p>
-              </div>
-
-              {/* Squad Preview Card */}
-              <div className="p-5 rounded-2xl border border-blue/20 bg-blue/5 space-y-3.5">
-                <div className="flex items-center justify-between pb-3 border-b border-blue/15">
                   <div>
-                    <h3 className="font-bold text-sm text-navy">{squadPreview.name}</h3>
-                    <p className="text-[11px] text-slate-500">Exam: {exam} · 6 members</p>
-                  </div>
-                  <Badge variant="primary">Auto-Matched</Badge>
-                </div>
-
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Your daily check-in is visible to 5 peers to create healthy social commitment and loss aversion:
-                </p>
-
-                <div className="space-y-2">
-                  {squadPreview.members.map((m, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 text-xs"
+                    <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2">
+                      City Location (Tier)
+                    </label>
+                    <select
+                      value={cityTier}
+                      onChange={(e) => setCityTier(e.target.value)}
+                      className="w-full py-2.5 px-3 rounded-xl border border-slate-300 bg-white text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-mono text-[10px] text-navy font-bold">
-                          {String.fromCharCode(65 + idx)}
-                        </span>
-                        <span className="font-semibold text-navy">{m.name}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-orange font-bold flex items-center gap-1">
-                          <FlameIcon size={11} className="text-orange" />
-                          <span>{m.streak}d</span>
-                        </span>
-                        <span className="text-[11px] text-slate-400">{m.status}</span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* User entry */}
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-blue/10 border border-blue/30 text-xs font-bold text-blue">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-6 h-6 rounded-lg bg-blue text-white flex items-center justify-center font-mono text-[10px]">
-                        YOU
-                      </span>
-                      <span>{profile?.name || 'You (New Member)'}</span>
-                    </div>
-                    <span className="text-[11px] text-blue">Starting Day 1</span>
+                      {CITY_TIERS.map((tier) => (
+                        <option key={tier.value} value={tier.value}>
+                          {tier.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-3.5 rounded-xl bg-orange/10 border border-orange/20 text-xs text-orange-950 flex items-center gap-2.5">
-                <FlagIcon size={16} className="text-orange flex-shrink-0" />
-                <span className="leading-relaxed">
-                  <strong>Loss aversion active:</strong> If you miss submitting today's study proof by 23:59, a red flag is displayed next to your entry in the squad board.
-                </span>
-              </div>
-
-              <div className="pt-4 flex items-center justify-between border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs text-slate-600 hover:text-navy font-medium cursor-pointer"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={handleFinishOnboarding}
-                  className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
-                >
-                  {submitting ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Generating Baseline Plan...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Complete Setup & Open Dashboard</span>
+                <div className="pt-4 flex justify-end">
+                  <ClickSpark sparkColor="#2563EB">
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      type="button"
+                      onClick={() => setStep(2)}
+                      className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Continue to Daily Target</span>
                       <ArrowRightIcon size={12} />
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
+                    </motion.button>
+                  </ClickSpark>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 2: Daily Target Hours & Hardest Subjects */}
+            {step === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-6"
+              >
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
+                    Step 2: Study Capacity & Diagnostic Baseline
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Pick your target hours and 3 hardest areas. This seeds your baseline mastery so your initial plan is non-generic.
+                  </p>
+                </div>
+
+                {/* Slider */}
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-navy uppercase tracking-wider">
+                      Daily Planned Study Hours
+                    </span>
+                    <span className="text-xl font-extrabold text-blue font-mono">
+                      <NumberTicker value={dailyTargetHrs} decimalPlaces={1} suffix=" hrs/day" />
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={2}
+                    max={12}
+                    step={0.5}
+                    value={dailyTargetHrs}
+                    onChange={(e) => setDailyTargetHrs(parseFloat(e.target.value))}
+                    className="w-full accent-blue cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[11px] text-slate-400 font-medium pt-1">
+                    <span>2 hours (Working Aspirant)</span>
+                    <span>6 hours (Standard Full-Time)</span>
+                    <span>12 hours (Intensive)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-navy uppercase tracking-wider">
+                      Pick 3 Subjects You Find Hardest
+                    </span>
+                    <span
+                      className={`text-xs font-bold ${
+                        weakSubjects.length === 3 ? 'text-emerald-700' : 'text-orange'
+                      }`}
+                    >
+                      {weakSubjects.length} of 3 selected
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mb-3">
+                    Weak topics are seeded at 30% mastery score to force remedial scheduling; others start at 60%.
+                  </p>
+
+                  <div className="space-y-2">
+                    {availableSubjects.map((subj) => {
+                      const isSelected = weakSubjects.includes(subj);
+                      return (
+                        <div
+                          key={subj}
+                          onClick={() => toggleSubject(subj)}
+                          className={`p-3.5 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all ${
+                            isSelected
+                              ? 'border-orange bg-orange/5 text-navy font-bold'
+                              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>{subj}</span>
+                          <span
+                            className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                              isSelected ? 'bg-orange text-white' : 'border border-slate-300'
+                            }`}
+                          >
+                            {isSelected && <CheckIcon size={11} />}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="px-4 py-2 rounded-xl border border-slate-300 text-xs text-slate-600 hover:text-navy font-medium cursor-pointer"
+                  >
+                    ← Back
+                  </button>
+                  <ClickSpark sparkColor="#2563EB">
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      type="button"
+                      disabled={weakSubjects.length === 0}
+                      onClick={() => setStep(3)}
+                      className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Continue to Squad Match</span>
+                      <ArrowRightIcon size={12} />
+                    </motion.button>
+                  </ClickSpark>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 3: Auto-join Squad matching exam */}
+            {step === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-6"
+              >
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
+                    Step 3: Accountability Squad Match
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    You are being matched into a 6-member cohort of serious {exam} aspirants.
+                  </p>
+                </div>
+
+                {/* Squad Preview Card with BorderBeam */}
+                <SpotlightCard
+                  spotlightColor="rgba(37, 99, 235, 0.08)"
+                  className="p-5 rounded-2xl border border-blue/20 bg-blue/5 space-y-3.5 relative overflow-hidden"
+                >
+                  <BorderBeam size={180} duration={12} colorFrom="#2563EB" colorTo="#60A5FA" />
+
+                  <div className="flex items-center justify-between pb-3 border-b border-blue/15">
+                    <div>
+                      <h3 className="font-bold text-sm text-navy">{squadPreview.name}</h3>
+                      <p className="text-[11px] text-slate-500">Exam: {exam} · 6 members</p>
+                    </div>
+                    <Badge variant="primary">Auto-Matched</Badge>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Your daily check-in is visible to 5 peers to create healthy social commitment and loss aversion:
+                  </p>
+
+                  <div className="space-y-2">
+                    {squadPreview.members.map((m, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 text-xs"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-mono text-[10px] text-navy font-bold">
+                            {String.fromCharCode(65 + idx)}
+                          </span>
+                          <span className="font-semibold text-navy">{m.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-orange font-bold flex items-center gap-1">
+                            <FlameIcon size={11} className="text-orange" />
+                            <span>{m.streak}d</span>
+                          </span>
+                          <span className="text-[11px] text-slate-400">{m.status}</span>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-blue/10 border border-blue/30 text-xs font-bold text-blue">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-blue text-white flex items-center justify-center font-mono text-[10px]">
+                          YOU
+                        </span>
+                        <span>{profile?.name || 'You (New Member)'}</span>
+                      </div>
+                      <span className="text-[11px] text-blue">Starting Day 1</span>
+                    </div>
+                  </div>
+                </SpotlightCard>
+
+                <div className="p-3.5 rounded-xl bg-orange/10 border border-orange/20 text-xs text-orange-950 flex items-center gap-2.5">
+                  <FlagIcon size={16} className="text-orange flex-shrink-0" />
+                  <span className="leading-relaxed">
+                    <strong>Loss aversion active:</strong> If you miss submitting today's study proof by 23:59, a red flag is displayed next to your entry in the squad board.
+                  </span>
+                </div>
+
+                <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="px-4 py-2 rounded-xl border border-slate-300 text-xs text-slate-600 hover:text-navy font-medium cursor-pointer"
+                  >
+                    ← Back
+                  </button>
+                  <ClickSpark sparkColor="#2563EB">
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      type="button"
+                      disabled={submitting}
+                      onClick={handleFinishOnboarding}
+                      className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
+                    >
+                      {submitting ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Generating Baseline Plan...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Complete Setup & Open Dashboard</span>
+                          <ArrowRightIcon size={12} />
+                        </>
+                      )}
+                    </motion.button>
+                  </ClickSpark>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

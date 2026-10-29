@@ -1,6 +1,8 @@
-import { NavLink, useNavigate, Link } from 'react-router-dom';
+import { NavLink, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { NumberTicker } from '../magicui/NumberTicker';
 import {
   DashboardIcon,
   PlanIcon,
@@ -29,6 +31,7 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [lang, setLang] = useState<'en' | 'hi'>('en');
   const [liteMode, setLiteMode] = useState(false);
 
@@ -100,35 +103,44 @@ export default function Sidebar() {
             <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
               <span className="flex items-center gap-1 text-orange font-bold">
                 <FlameIcon size={14} className="text-orange" />
-                <span>{profile.streak_count}d streak</span>
+                <NumberTicker value={profile.streak_count} suffix="d streak" className="text-orange font-bold text-xs" />
               </span>
               <span className="flex items-center gap-1 text-sky font-bold">
                 <StarIcon size={14} className="text-sky" />
-                <span>{profile.total_points.toLocaleString()} pts</span>
+                <NumberTicker value={profile.total_points} suffix=" pts" className="text-sky font-bold text-xs" />
               </span>
             </div>
           </div>
         )}
       </div>
 
-      {/* The 7 Navigation Items in exact specified order (§6) */}
+      {/* The 7 Navigation Items with Animated Active Pill */}
       <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+
           return (
             <NavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
-                  isActive
-                    ? 'bg-blue text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10'
-                }`
-              }
+              className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-colors ${
+                isActive
+                  ? 'text-white font-bold'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
             >
-              <Icon size={18} className="flex-shrink-0" />
-              <span>{item.label}</span>
+              {isActive && (
+                <motion.span
+                  layoutId="sidebarActivePill"
+                  className="absolute inset-0 bg-blue rounded-xl z-0 shadow-xs"
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-3">
+                <Icon size={18} className="flex-shrink-0" />
+                <span>{item.label}</span>
+              </span>
             </NavLink>
           );
         })}

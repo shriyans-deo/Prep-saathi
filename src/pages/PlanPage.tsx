@@ -15,6 +15,11 @@ import {
   FlameIcon,
 } from '../components/ui/Icons';
 import { Badge } from '../components/ui/Badge';
+import { SpotlightCard } from '../components/reactbits/SpotlightCard';
+import { DecryptedText } from '../components/reactbits/DecryptedText';
+import { BlurFade } from '../components/magicui/BlurFade';
+import { triggerAcademicConfetti } from '../components/magicui/Confetti';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface PlanTask {
   subject: string;
@@ -83,14 +88,14 @@ export default function PlanPage() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regenerateNotice, setRegenerateNotice] = useState<string | null>(null);
 
-  // Active Study Session State (§5 & §6 Screen 4)
+  // Active Study Session State
   const [activeTaskIndex, setActiveTaskIndex] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
   const [sessionNotes, setSessionNotes] = useState<string>('');
   const [completedSuccessMsg, setCompletedSuccessMsg] = useState<string | null>(null);
 
-  // Load cached plan from Supabase (§3 & §5: "Cache in daily_plans — never regenerate on render")
+  // Load cached plan from Supabase
   useEffect(() => {
     const loadCachedPlan = async () => {
       const today = new Date().toISOString().split('T')[0];
@@ -131,7 +136,7 @@ export default function PlanPage() {
 
   // Study Session Timer ticker
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (isTimerRunning && secondsRemaining > 0) {
       interval = setInterval(() => {
         setSecondsRemaining((prev) => prev - 1);
@@ -139,7 +144,9 @@ export default function PlanPage() {
     } else if (secondsRemaining === 0 && isTimerRunning) {
       setIsTimerRunning(false);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isTimerRunning, secondsRemaining]);
 
   const openStudySession = (index: number) => {
@@ -156,7 +163,7 @@ export default function PlanPage() {
     setIsTimerRunning(false);
   };
 
-  // Completing a task writes study_logs, increments completed_count, and nudges mastery (§6 Screen 4)
+  // Completing a task writes study_logs, increments completed_count, and nudges mastery
   const handleCompleteTask = async () => {
     if (activeTaskIndex === null) return;
     const task = tasks[activeTaskIndex];
@@ -165,9 +172,12 @@ export default function PlanPage() {
     updatedTasks[activeTaskIndex] = {
       ...task,
       completed: true,
-      masteryScore: Math.min(100, (task.masteryScore || 50) + 4), // Mastery nudge
+      masteryScore: Math.min(100, (task.masteryScore || 50) + 4),
     };
     setTasks(updatedTasks);
+
+    // Trigger celebration confetti
+    triggerAcademicConfetti({ particleCount: 50, spread: 65 });
 
     const completedCount = updatedTasks.filter((t) => t.completed).length;
     const today = new Date().toISOString().split('T')[0];
@@ -175,7 +185,6 @@ export default function PlanPage() {
     // Write back to Supabase
     try {
       if (!isDemoUser && currentProfile.id) {
-        // 1. Update daily_plans
         await supabase.from('daily_plans').upsert({
           user_id: currentProfile.id,
           plan_date: today,
@@ -187,7 +196,6 @@ export default function PlanPage() {
           completed_count: completedCount,
         });
 
-        // 2. Insert or update study_logs
         const addedHours = +(task.minutes / 60).toFixed(2);
         const { data: existingLog } = await supabase
           .from('study_logs')
@@ -219,7 +227,7 @@ export default function PlanPage() {
     }, 1500);
   };
 
-  // Regenerate Plan (§5 Task 1 & §6 Screen 4: "uses yesterday's completion.")
+  // Regenerate Plan
   const handleRegeneratePlan = async () => {
     setIsRegenerating(true);
     setRegenerateNotice(null);
@@ -232,7 +240,7 @@ export default function PlanPage() {
         learning_topics: ['Syllogism', 'Number System', 'Indian Polity'],
         yesterday: {
           planned: 6.0,
-          actual: 3.5, // 58% completion (< 60% rule triggers 25% duration reduction)
+          actual: 3.5,
           completed_tasks: 2,
           total_tasks: 4,
         },
@@ -253,7 +261,6 @@ export default function PlanPage() {
         setTasks(enriched);
         if (aiResponse.focus_note) setFocusNote(aiResponse.focus_note);
 
-        // Cache in daily_plans table (§5 Task 1)
         const today = new Date().toISOString().split('T')[0];
         if (!isDemoUser && currentProfile.id) {
           await supabase.from('daily_plans').upsert({
@@ -283,7 +290,6 @@ export default function PlanPage() {
     }
   };
 
-  // Helper formatting for timer mm:ss
   const formatTimer = (totalSec: number) => {
     const mins = Math.floor(totalSec / 60);
     const secs = totalSec % 60;
@@ -294,245 +300,281 @@ export default function PlanPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header with Regenerate Action (§5) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
-              Today's Execution Workspace
-            </h1>
-            <Badge variant="primary">
-              <SparklesIcon size={13} className="text-blue" />
-              <span>Grounded AI Engine</span>
-            </Badge>
+      {/* Header with Regenerate Action */}
+      <BlurFade delay={0.05}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
+                Today's Execution Workspace
+              </h1>
+              <Badge variant="primary">
+                <SparklesIcon size={13} className="text-blue" />
+                <span>Grounded AI Engine</span>
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Grounded in your measured mastery scores and adapted based on yesterday's completion.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Grounded in your measured mastery scores and adapted based on yesterday's completion.
-          </p>
-        </div>
 
-        {/* Regenerate Plan Button with caption (§5 & §6 Screen 4) */}
-        <div className="flex flex-col items-start sm:items-end gap-1 flex-shrink-0">
-          <button
-            type="button"
-            onClick={handleRegeneratePlan}
-            disabled={isRegenerating}
-            className="px-4 py-2.5 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs shadow-xs transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-          >
-            <RefreshCwIcon size={14} className={isRegenerating ? 'animate-spin' : ''} />
-            <span>{isRegenerating ? 'Analyzing Mastery...' : 'Regenerate Plan'}</span>
-          </button>
-          <span className="text-[11px] text-slate-400 italic">
-            uses yesterday's completion
-          </span>
+          <div className="flex flex-col items-start sm:items-end gap-1 flex-shrink-0">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              type="button"
+              onClick={handleRegeneratePlan}
+              disabled={isRegenerating}
+              className="px-4 py-2.5 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs shadow-xs transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCwIcon size={14} className={isRegenerating ? 'animate-spin' : ''} />
+              <span>{isRegenerating ? 'Analyzing Mastery...' : 'Regenerate Plan'}</span>
+            </motion.button>
+            <span className="text-[11px] text-slate-400 italic">
+              uses yesterday's completion
+            </span>
+          </div>
         </div>
-      </div>
+      </BlurFade>
 
       {regenerateNotice && (
-        <div className="p-4 rounded-xl bg-blue/5 border border-blue/20 text-xs text-blue-950 flex items-start gap-2.5 shadow-2xs">
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-xl bg-blue/5 border border-blue/20 text-xs text-blue-950 flex items-start gap-2.5 shadow-2xs"
+        >
           <SparklesIcon size={16} className="text-blue flex-shrink-0 mt-0.5" />
           <div>
             <strong>Adaptive Feedback Loop:</strong> {regenerateNotice}
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* Focus Note Card (§5) */}
-      <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-start gap-3.5">
-        <div className="w-10 h-10 rounded-xl bg-blue/10 flex items-center justify-center text-blue flex-shrink-0">
-          <SparklesIcon size={18} className="text-blue" />
+      {/* Focus Note Card with DecryptedText */}
+      <BlurFade delay={0.1}>
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-blue/10 flex items-center justify-center text-blue flex-shrink-0">
+            <SparklesIcon size={18} className="text-blue" />
+          </div>
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-blue block">
+              Today's Primary Focus Note
+            </span>
+            <p className="text-sm font-semibold text-navy mt-1 leading-relaxed">
+              <DecryptedText text={focusNote} speed={30} className="font-semibold text-navy" />
+            </p>
+          </div>
         </div>
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-blue block">
-            Today's Primary Focus Note
-          </span>
-          <p className="text-sm font-semibold text-navy mt-1 leading-relaxed">{focusNote}</p>
-        </div>
-      </div>
+      </BlurFade>
 
-      {/* Task List Workspace (full width available) */}
+      {/* Task List Workspace using SpotlightCard */}
       <div className="space-y-4">
         {tasks.map((task, idx) => (
-          <div
-            key={idx}
-            className={`p-5 sm:p-6 rounded-2xl border transition-all ${
-              task.completed
-                ? 'border-emerald-200 bg-emerald-50/20'
-                : 'border-slate-200/80 bg-white hover:border-blue/40 shadow-xs'
-            }`}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-2 flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {task.subject}
-                  </span>
-                  <Badge
-                    variant={
-                      task.type === 'weak_topic'
-                        ? 'weak'
-                        : task.type === 'learning'
-                        ? 'learning'
-                        : 'mastered'
-                    }
-                  >
-                    {task.type === 'weak_topic'
-                      ? 'Weak Topic'
-                      : task.type === 'learning'
-                      ? 'Reinforcement'
-                      : 'Revision'}
-                  </Badge>
-                  <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md font-semibold">
-                    Mastery: {task.masteryScore}%
-                  </span>
-                  {task.completed && (
-                    <span className="text-[11px] font-bold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                      <CheckIcon size={11} />
-                      <span>Completed</span>
+          <BlurFade key={idx} delay={0.15 + idx * 0.05}>
+            <SpotlightCard
+              spotlightColor="rgba(37, 99, 235, 0.08)"
+              className={`p-5 sm:p-6 transition-all ${
+                task.completed
+                  ? 'border-emerald-200 bg-emerald-50/20'
+                  : 'border-slate-200/80 bg-white hover:border-blue/40 shadow-xs'
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      {task.subject}
                     </span>
-                  )}
+                    <Badge
+                      variant={
+                        task.type === 'weak_topic'
+                          ? 'weak'
+                          : task.type === 'learning'
+                          ? 'learning'
+                          : 'mastered'
+                      }
+                    >
+                      {task.type === 'weak_topic'
+                        ? 'Weak Topic'
+                        : task.type === 'learning'
+                        ? 'Reinforcement'
+                        : 'Revision'}
+                    </Badge>
+                    <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md font-semibold">
+                      Mastery: {task.masteryScore}%
+                    </span>
+                    {task.completed && (
+                      <span className="text-[11px] font-bold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <CheckIcon size={11} />
+                        <span>Completed</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="text-base sm:text-lg font-bold text-navy">{task.topic}</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">{task.task}</p>
+
+                  <div className="p-3 rounded-xl bg-blue/5 border border-blue/15 text-xs text-blue-950 mt-2 font-medium">
+                    <strong>Why assigned:</strong> {task.why}
+                  </div>
                 </div>
 
-                <h3 className="text-base sm:text-lg font-bold text-navy">{task.topic}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{task.task}</p>
+                {/* Action and Duration Column */}
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3.5 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <ClockIcon size={14} className="text-slate-500" />
+                    <span>{task.minutes} min</span>
+                  </div>
 
-                {/* AI Why Rationale Line (§5 Task 1 & §6 Screen 4) */}
-                <div className="p-3 rounded-xl bg-blue/5 border border-blue/15 text-xs text-blue-950 mt-2 font-medium">
-                  <strong>Why assigned:</strong> {task.why}
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    type="button"
+                    onClick={() => openStudySession(idx)}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer ${
+                      task.completed
+                        ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                        : 'bg-blue text-white hover:bg-blue/90'
+                    }`}
+                  >
+                    {task.completed ? <RefreshCwIcon size={13} /> : <PlayIcon size={13} />}
+                    <span>{task.completed ? 'Review Session' : 'Start Study Session'}</span>
+                  </motion.button>
                 </div>
               </div>
-
-              {/* Action and Duration Column */}
-              <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3.5 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
-                <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg">
-                  <ClockIcon size={14} className="text-slate-500" />
-                  <span>{task.minutes} min</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => openStudySession(idx)}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer ${
-                    task.completed
-                      ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                      : 'bg-blue text-white hover:bg-blue/90'
-                  }`}
-                >
-                  {task.completed ? <RefreshCwIcon size={13} /> : <PlayIcon size={13} />}
-                  <span>{task.completed ? 'Review Session' : 'Start Study Session'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
+            </SpotlightCard>
+          </BlurFade>
         ))}
       </div>
 
-      {/* Study Session Modal (§5 & §6 Screen 4) */}
-      {activeTask && (
-        <div className="fixed inset-0 bg-navy/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative">
-            <button
-              onClick={closeStudySession}
-              className="absolute top-5 right-5 text-slate-400 hover:text-navy text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 transition cursor-pointer"
+      {/* Study Session Modal with AnimatePresence */}
+      <AnimatePresence>
+        {activeTask && (
+          <div className="fixed inset-0 bg-navy/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative"
             >
-              ✕
-            </button>
-
-            <div className="text-center mb-6">
-              <Badge variant="primary">Active Study Session</Badge>
-              <h2 className="text-xl font-extrabold text-navy tracking-tight mt-2">{activeTask.topic}</h2>
-              <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto">{activeTask.task}</p>
-            </div>
-
-            {/* Countdown / Elapsed Timer */}
-            <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center justify-center">
-              <div className="font-mono text-5xl font-black text-navy tracking-tight">
-                {formatTimer(secondsRemaining)}
-              </div>
-              <p className="text-xs text-slate-500 mt-2 font-medium">
-                Target: {activeTask.minutes} minutes · Maintain focus
-              </p>
-
-              {/* Timer Controls */}
-              <div className="flex items-center gap-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsTimerRunning(!isTimerRunning)}
-                  className="px-4 py-2 rounded-xl bg-navy text-white text-xs font-bold hover:bg-navy/90 flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  {isTimerRunning ? <PauseIcon size={13} /> : <PlayIcon size={13} />}
-                  <span>{isTimerRunning ? 'Pause' : 'Resume'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSecondsRemaining(activeTask.minutes * 60)}
-                  className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-600 hover:text-navy text-xs font-medium cursor-pointer"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-
-            {/* Session Notes field (§5 & §6 Screen 4) */}
-            <div className="mb-6">
-              <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
-                Session Notes & Solved Problems
-              </label>
-              <textarea
-                value={sessionNotes}
-                onChange={(e) => setSessionNotes(e.target.value)}
-                placeholder="Log question numbers solved, shortcut formulas used, or friction points..."
-                rows={3}
-                className="w-full p-3.5 rounded-xl border border-slate-300 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue resize-none"
-              />
-            </div>
-
-            {completedSuccessMsg && (
-              <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-bold text-center">
-                {completedSuccessMsg}
-              </div>
-            )}
-
-            {/* Done Button */}
-            <div className="flex gap-3">
               <button
-                type="button"
                 onClick={closeStudySession}
-                className="flex-1 py-3 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:text-navy cursor-pointer"
+                className="absolute top-5 right-5 text-slate-400 hover:text-navy text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 transition cursor-pointer"
               >
-                Save & Exit Later
+                ✕
               </button>
-              <button
-                type="button"
-                onClick={handleCompleteTask}
-                className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <CheckIcon size={13} />
-                <span>Mark Task Done</span>
-              </button>
-            </div>
+
+              <div className="text-center mb-6">
+                <Badge variant="primary">Active Study Session</Badge>
+                <h2 className="text-xl font-extrabold text-navy tracking-tight mt-2">{activeTask.topic}</h2>
+                <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto">{activeTask.task}</p>
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="my-6 p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center justify-center">
+                <div className="font-mono text-5xl font-black text-navy tracking-tight">
+                  {formatTimer(secondsRemaining)}
+                </div>
+                <p className="text-xs text-slate-500 mt-2 font-medium">
+                  Target: {activeTask.minutes} minutes · Maintain focus
+                </p>
+
+                {/* Timer Controls */}
+                <div className="flex items-center gap-3 mt-4">
+                  <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    type="button"
+                    onClick={() => setIsTimerRunning(!isTimerRunning)}
+                    className="px-4 py-2 rounded-xl bg-navy text-white text-xs font-bold hover:bg-navy/90 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    {isTimerRunning ? <PauseIcon size={13} /> : <PlayIcon size={13} />}
+                    <span>{isTimerRunning ? 'Pause' : 'Resume'}</span>
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    type="button"
+                    onClick={() => setSecondsRemaining(activeTask.minutes * 60)}
+                    className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-600 hover:text-navy text-xs font-medium cursor-pointer"
+                  >
+                    Reset
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Session Notes field */}
+              <div className="mb-6">
+                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
+                  Session Notes & Solved Problems
+                </label>
+                <textarea
+                  value={sessionNotes}
+                  onChange={(e) => setSessionNotes(e.target.value)}
+                  placeholder="Log question numbers solved, shortcut formulas used, or friction points..."
+                  rows={3}
+                  className="w-full p-3.5 rounded-xl border border-slate-300 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue resize-none"
+                />
+              </div>
+
+              {completedSuccessMsg && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-bold text-center"
+                >
+                  {completedSuccessMsg}
+                </motion.div>
+              )}
+
+              {/* Done Button */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={closeStudySession}
+                  className="flex-1 py-3 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:text-navy cursor-pointer"
+                >
+                  Save & Exit Later
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={handleCompleteTask}
+                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <CheckIcon size={13} />
+                  <span>Mark Task Done</span>
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Proof of Work Prompt */}
-      <div className="p-5 rounded-2xl bg-orange/5 border border-orange/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-orange/15 flex items-center justify-center text-orange flex-shrink-0">
-            <FlameIcon size={18} className="text-orange" />
+      <BlurFade delay={0.35}>
+        <div className="p-5 rounded-2xl bg-orange/5 border border-orange/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-orange/15 flex items-center justify-center text-orange flex-shrink-0">
+              <FlameIcon size={18} className="text-orange" />
+            </div>
+            <div className="text-navy">
+              <strong>Finished your study block?</strong> Submit a 20-second notebook photo to bump your streak and update your squad feed.
+            </div>
           </div>
-          <div className="text-navy">
-            <strong>Finished your study block?</strong> Submit a 20-second notebook photo to bump your streak and update your squad feed.
-          </div>
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate('/proof')}
+            className="px-4 py-2.5 rounded-xl bg-orange text-white font-bold flex-shrink-0 hover:bg-orange/90 transition shadow-xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+          >
+            <span>Submit Proof of Work</span>
+            <ArrowRightIcon size={12} />
+          </motion.button>
         </div>
-        <button
-          onClick={() => navigate('/proof')}
-          className="px-4 py-2.5 rounded-xl bg-orange text-white font-bold flex-shrink-0 hover:bg-orange/90 transition shadow-xs flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
-        >
-          <span>Submit Proof of Work</span>
-          <ArrowRightIcon size={12} />
-        </button>
-      </div>
+      </BlurFade>
     </div>
   );
 }

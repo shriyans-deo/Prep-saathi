@@ -1,12 +1,15 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import BottomTabs from './BottomTabs';
 import { useAuth } from '../../context/AuthContext';
 import { FlameIcon, StarIcon, LogOutIcon } from './Icons';
+import { NumberTicker } from '../magicui/NumberTicker';
+import { AnimatePresence, motion } from 'motion/react';
 
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-bg text-navy flex flex-col md:flex-row antialiased selection:bg-blue/15 selection:text-blue">
@@ -31,11 +34,11 @@ export default function AppLayout() {
             <div className="flex items-center gap-3 text-xs">
               <span className="text-orange font-bold flex items-center gap-1 bg-orange/15 px-2 py-0.5 rounded-full border border-orange/30">
                 <FlameIcon size={13} className="text-orange" />
-                <span>{profile.streak_count}d</span>
+                <NumberTicker value={profile.streak_count} suffix="d" className="text-orange" />
               </span>
               <span className="text-sky font-bold flex items-center gap-1 bg-blue/20 px-2 py-0.5 rounded-full border border-blue/30">
                 <StarIcon size={13} className="text-sky" />
-                <span>{profile.total_points}</span>
+                <NumberTicker value={profile.total_points} className="text-sky" />
               </span>
               <button
                 type="button"
@@ -54,7 +57,18 @@ export default function AppLayout() {
 
         {/* Global Main Container (Max 1440px on extra-wide screens, full width responsive) */}
         <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 py-6 sm:px-6 md:px-8 md:py-8 pb-24 md:pb-8">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="w-full h-full"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 

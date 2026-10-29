@@ -13,6 +13,13 @@ import {
   AlertTriangleIcon,
 } from '../components/ui/Icons';
 import { Badge } from '../components/ui/Badge';
+import { NumberTicker } from '../components/magicui/NumberTicker';
+import { ShimmerButton } from '../components/magicui/ShimmerButton';
+import { triggerAcademicConfetti } from '../components/magicui/Confetti';
+import { BlurFade } from '../components/magicui/BlurFade';
+import { SpotlightCard } from '../components/reactbits/SpotlightCard';
+import { ClickSpark } from '../components/reactbits/ClickSpark';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface Question {
   q: string;
@@ -78,7 +85,6 @@ export default function QuizPage() {
   const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
-  // Load document-derived quiz if navigated from Library (§6 Screen 5)
   useEffect(() => {
     const isDocSource = searchParams.get('source') === 'doc';
     if (isDocSource) {
@@ -110,7 +116,6 @@ export default function QuizPage() {
     }
   };
 
-  // Submit quiz and request concept-level AI feedback (§5 Task 2)
   const handleSubmitQuiz = async () => {
     setIsSubmitting(true);
     setActionNotice(null);
@@ -155,10 +160,12 @@ export default function QuizPage() {
 
       setQuizResult(result);
 
-      // Writeback to Supabase mastery table (§5 Task 2)
+      if (correctCount >= 4) {
+        triggerAcademicConfetti({ particleCount: 50, spread: 70 });
+      }
+
       try {
         if (!isDemoUser && currentProfile.id) {
-          // 1. Record quiz
           await supabase.from('quizzes').insert({
             user_id: currentProfile.id,
             score: Math.round((correctCount / questions.length) * 100),
@@ -167,7 +174,6 @@ export default function QuizPage() {
             ai_feedback: `${result.concept_gap}: ${result.feedback}`,
           });
 
-          // 2. Fetch topic and update mastery
           const { data: topicData } = await supabase
             .from('topics')
             .select('id')
@@ -217,7 +223,6 @@ export default function QuizPage() {
     }
   };
 
-  // Button 1: Add remedial task to tomorrow (§6 Screen 6)
   const handleAddRemedialTask = async () => {
     if (!quizResult) return;
     const tomorrow = new Date();
@@ -264,7 +269,6 @@ export default function QuizPage() {
     );
   };
 
-  // Button 2: Retry in 3 days (spaced repetition SM-2 loop, §6 Screen 6)
   const handleSpacedRetry = () => {
     setActionNotice(
       `✓ Spaced repetition scheduled: You will be re-tested on "${topicName}" in 3 days to verify retention.`
@@ -274,205 +278,239 @@ export default function QuizPage() {
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between pb-6 border-b border-slate-200">
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">
-            Diagnostic Assessment · {topicName}
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight mt-1">
-            5-Question Diagnostic Assessment
-          </h1>
-        </div>
+      <BlurFade delay={0.05}>
+        <div className="flex items-center justify-between pb-6 border-b border-slate-200">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block">
+              Diagnostic Assessment · {topicName}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight mt-1">
+              5-Question Diagnostic Assessment
+            </h1>
+          </div>
 
-        <Badge variant="neutral">
-          <ClockIcon size={12} />
-          <span>Under 24h Loop</span>
-        </Badge>
-      </div>
+          <Badge variant="neutral">
+            <ClockIcon size={12} />
+            <span>Under 24h Loop</span>
+          </Badge>
+        </div>
+      </BlurFade>
 
       {!quizResult ? (
-        /* QUIZ ACTIVE VIEW (§7: Centered question panel, progress dots at top, no back navigation) */
-        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-6">
-          {/* Progress dots at top */}
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-            <span className="text-xs font-bold text-navy uppercase tracking-wider">
-              Question {currentIndex + 1} of {questions.length}
-            </span>
+        <BlurFade delay={0.1}>
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-6">
+            {/* Progress dots at top */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <span className="text-xs font-bold text-navy uppercase tracking-wider">
+                Question {currentIndex + 1} of {questions.length}
+              </span>
 
-            <div className="flex items-center gap-2">
-              {questions.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`w-3 h-3 rounded-full transition-all ${
-                    idx === currentIndex
-                      ? 'bg-blue scale-125 ring-2 ring-blue/30'
-                      : selectedAnswers[idx]
-                      ? 'bg-navy'
-                      : 'bg-slate-200'
-                  }`}
-                />
-              ))}
+              <div className="flex items-center gap-2">
+                {questions.map((_, idx) => (
+                  <motion.div
+                    key={idx}
+                    animate={{
+                      scale: idx === currentIndex ? 1.25 : 1,
+                      backgroundColor:
+                        idx === currentIndex
+                          ? '#2563EB'
+                          : selectedAnswers[idx]
+                          ? '#0B1F3A'
+                          : '#E2E8F0',
+                    }}
+                    transition={{ duration: 0.2 }}
+                    className="w-3 h-3 rounded-full"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Question Text with Animated Entrance */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentIndex}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={{ duration: 0.2 }}
+                className="min-h-[85px] flex items-center"
+              >
+                <p className="text-base sm:text-lg font-bold text-navy leading-relaxed">
+                  {currentQ.q}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Options with ClickSpark and SpotlightCard */}
+            <div className="space-y-3">
+              {currentQ.options.map((opt, oIdx) => {
+                const isSelected = selectedAnswers[currentIndex] === opt;
+                const letter = String.fromCharCode(65 + oIdx);
+                return (
+                  <ClickSpark key={oIdx} sparkColor="#2563EB" className="w-full">
+                    <SpotlightCard
+                      onClick={() => handleSelectOption(opt)}
+                      spotlightColor="rgba(37, 99, 235, 0.08)"
+                      className={`p-4 cursor-pointer text-sm font-semibold transition-all flex items-center gap-3.5 ${
+                        isSelected
+                          ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}
+                    >
+                      <span
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                          isSelected ? 'bg-blue text-white' : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {letter}
+                      </span>
+                      <span className="flex-1">{opt}</span>
+                    </SpotlightCard>
+                  </ClickSpark>
+                );
+              })}
+            </div>
+
+            {/* Forward Navigation Only */}
+            <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+              <span className="text-[11px] text-slate-400 font-medium">
+                Exam discipline active: Forward navigation only
+              </span>
+
+              {currentIndex < questions.length - 1 ? (
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  disabled={!selectedAnswers[currentIndex]}
+                  onClick={handleNext}
+                  className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 cursor-pointer"
+                >
+                  Next Question →
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  disabled={!selectedAnswers[currentIndex] || isSubmitting}
+                  onClick={handleSubmitQuiz}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Analyzing Concept Gap...</span>
+                    </>
+                  ) : (
+                    <span>Submit Quiz & Get Concept Feedback →</span>
+                  )}
+                </motion.button>
+              )}
             </div>
           </div>
-
-          {/* Question Text */}
-          <div className="min-h-[90px] flex items-center">
-            <p className="text-base sm:text-lg font-bold text-navy leading-relaxed">
-              {currentQ.q}
-            </p>
-          </div>
-
-          {/* Options (One question per screen, no back navigation) */}
-          <div className="space-y-3">
-            {currentQ.options.map((opt, oIdx) => {
-              const isSelected = selectedAnswers[currentIndex] === opt;
-              const letter = String.fromCharCode(65 + oIdx);
-              return (
-                <div
-                  key={oIdx}
-                  onClick={() => handleSelectOption(opt)}
-                  className={`p-4 rounded-xl border text-sm font-semibold cursor-pointer transition-all flex items-center gap-3.5 ${
-                    isSelected
-                      ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  <span
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
-                      isSelected ? 'bg-blue text-white' : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {letter}
-                  </span>
-                  <span className="flex-1">{opt}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Forward Navigation Only */}
-          <div className="pt-4 flex items-center justify-between border-t border-slate-100">
-            <span className="text-[11px] text-slate-400 font-medium">
-              Exam discipline active: Forward navigation only
-            </span>
-
-            {currentIndex < questions.length - 1 ? (
-              <button
-                type="button"
-                disabled={!selectedAnswers[currentIndex]}
-                onClick={handleNext}
-                className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 cursor-pointer"
-              >
-                Next Question →
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={!selectedAnswers[currentIndex] || isSubmitting}
-                onClick={handleSubmitQuiz}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Analyzing Concept Gap...</span>
-                  </>
-                ) : (
-                  <span>Submit Quiz & Get Concept Feedback →</span>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
+        </BlurFade>
       ) : (
-        /* QUIZ FEEDBACK VIEW (§7: Structured feedback card with score, concept gap, AI feedback, remedial task, retry in 3 days) */
-        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-6">
-          {/* Header Outcome Box */}
-          <div className="p-6 rounded-2xl bg-navy text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-sky block">
-                Diagnostic Outcome
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                {quizResult.score} of {quizResult.total} Correct
-              </h2>
-              <p className="text-xs text-slate-300 mt-1">
-                Mastery Delta: <span className="text-orange font-bold font-mono">{quizResult.mastery_delta}%</span> written to profile
+        /* QUIZ FEEDBACK VIEW */
+        <BlurFade delay={0.1}>
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-6">
+            {/* Header Outcome Box with NumberTicker */}
+            <div className="p-6 rounded-2xl bg-navy text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-sky block">
+                  Diagnostic Outcome
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 flex items-center gap-2">
+                  <NumberTicker value={quizResult.score} />
+                  <span>of</span>
+                  <NumberTicker value={quizResult.total} />
+                  <span>Correct</span>
+                </h2>
+                <p className="text-xs text-slate-300 mt-1">
+                  Mastery Delta: <span className="text-orange font-bold font-mono">{quizResult.mastery_delta}%</span> written to profile
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 text-center self-start sm:self-auto">
+                <span className="text-[11px] text-slate-300 uppercase tracking-wider block">Status Recalculated</span>
+                <span className="text-sm font-bold text-orange">
+                  Weak Topic (Requires Remediation)
+                </span>
+              </div>
+            </div>
+
+            {/* Concept Gap Feedback Box */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-orange/5 border-2 border-orange/30 space-y-2.5">
+              <div className="flex items-center gap-2 text-orange">
+                <AlertTriangleIcon size={18} className="text-orange" />
+                <h3 className="text-sm font-extrabold uppercase tracking-wider">
+                  Underlying Concept Gap: {quizResult.concept_gap}
+                </h3>
+              </div>
+              <p className="text-sm text-slate-800 leading-relaxed font-medium">
+                {quizResult.feedback}
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-white/10 border border-white/15 text-center self-start sm:self-auto">
-              <span className="text-[11px] text-slate-300 uppercase tracking-wider block">Status Recalculated</span>
-              <span className="text-sm font-bold text-orange">
-                Weak Topic (Requires Remediation)
-              </span>
+            {actionNotice && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 flex items-center gap-2"
+              >
+                <CheckIcon size={14} className="text-emerald-700" />
+                <span>{actionNotice}</span>
+              </motion.div>
+            )}
+
+            {/* Action Buttons: Add Remedial Task & Retry in 3 Days */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+              <ShimmerButton
+                onClick={handleAddRemedialTask}
+                className="w-full py-3 px-4 text-xs font-bold"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <QuizIcon size={16} />
+                  <span>Add Remedial Task to Tomorrow</span>
+                </div>
+              </ShimmerButton>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={handleSpacedRetry}
+                className="py-3 px-4 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <RefreshCwIcon size={14} />
+                <span>Retry in {quizResult.retest_in_days} Days (Spaced Retention)</span>
+              </motion.button>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setQuizResult(null);
+                  setSelectedAnswers({});
+                  setCurrentIndex(0);
+                  setActionNotice(null);
+                }}
+                className="text-slate-500 hover:text-navy font-medium cursor-pointer"
+              >
+                ← Take Another Diagnostic
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/plan')}
+                className="font-bold text-blue hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>View Tomorrow's Updated Plan</span>
+                <ArrowRightIcon size={12} />
+              </button>
             </div>
           </div>
-
-          {/* Concept Gap Feedback Box (§6 Screen 6: "The pattern is relative motion in time-speed-distance, not percentages") */}
-          <div className="p-5 sm:p-6 rounded-2xl bg-orange/5 border-2 border-orange/30 space-y-2.5">
-            <div className="flex items-center gap-2 text-orange">
-              <AlertTriangleIcon size={18} className="text-orange" />
-              <h3 className="text-sm font-extrabold uppercase tracking-wider">
-                Underlying Concept Gap: {quizResult.concept_gap}
-              </h3>
-            </div>
-            <p className="text-sm text-slate-800 leading-relaxed font-medium">
-              {quizResult.feedback}
-            </p>
-          </div>
-
-          {actionNotice && (
-            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 animate-in fade-in flex items-center gap-2">
-              <CheckIcon size={14} className="text-emerald-700" />
-              <span>{actionNotice}</span>
-            </div>
-          )}
-
-          {/* Action Buttons: Add Remedial Task & Retry in 3 Days */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-            <button
-              type="button"
-              onClick={handleAddRemedialTask}
-              className="py-3 px-4 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <QuizIcon size={16} />
-              <span>Add Remedial Task to Tomorrow</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSpacedRetry}
-              className="py-3 px-4 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <RefreshCwIcon size={14} />
-              <span>Retry in {quizResult.retest_in_days} Days (Spaced Retention)</span>
-            </button>
-          </div>
-
-          <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setQuizResult(null);
-                setSelectedAnswers({});
-                setCurrentIndex(0);
-                setActionNotice(null);
-              }}
-              className="text-slate-500 hover:text-navy font-medium cursor-pointer"
-            >
-              ← Take Another Diagnostic
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/plan')}
-              className="font-bold text-blue hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>View Tomorrow's Updated Plan</span>
-              <ArrowRightIcon size={12} />
-            </button>
-          </div>
-        </div>
+        </BlurFade>
       )}
     </div>
   );

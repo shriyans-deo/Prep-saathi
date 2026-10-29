@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { CheckIcon, SparklesIcon, ArrowRightIcon } from '../components/ui/Icons';
 import { Badge } from '../components/ui/Badge';
+import { Spotlight } from '../components/aceternity/Spotlight';
+import { BackgroundDots } from '../components/aceternity/BackgroundDots';
+import { ShimmerButton } from '../components/magicui/ShimmerButton';
+import { BlurFade } from '../components/magicui/BlurFade';
+import { DecryptedText } from '../components/reactbits/DecryptedText';
+import { motion } from 'motion/react';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -51,9 +57,11 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-bg">
-      {/* Left panel: Product Thesis & Daily Loop (§6 Screen 1) */}
-      <div className="w-full md:w-1/2 bg-navy text-white p-8 sm:p-12 md:p-16 flex flex-col justify-between relative overflow-hidden border-b md:border-b-0 md:border-r border-navy/40">
-        <div>
+      {/* Left panel with Aceternity Spotlight and BackgroundDots */}
+      <BackgroundDots variant="dark" className="w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex flex-col justify-between relative border-b md:border-b-0 md:border-r border-navy/40">
+        <Spotlight className="-top-40 left-0 md:left-20 md:-top-20" fill="#2563EB" />
+
+        <div className="relative z-10">
           <div className="flex items-center gap-2.5 mb-10">
             <span className="w-9 h-9 rounded-xl bg-blue flex items-center justify-center font-bold text-base text-white shadow-xs">
               PS
@@ -65,7 +73,11 @@ export default function AuthPage() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4 tracking-tight">
-            The Execution Engine for Indian Government Exams
+            <DecryptedText
+              text="The Execution Engine for Indian Government Exams"
+              speed={28}
+              className="text-white"
+            />
           </h1>
           <p className="text-slate-300 text-sm sm:text-base mb-8 leading-relaxed font-normal">
             Content is solved. YouTube is free. The binding constraint is execution.
@@ -73,7 +85,7 @@ export default function AuthPage() {
           </p>
 
           {/* The Daily Loop Framing Card */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8 space-y-1">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8 space-y-1 backdrop-blur-xs">
             <span className="text-[11px] font-bold uppercase tracking-wider text-sky block">The Daily Closed Loop</span>
             <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
               Plan → Study → Log Execution → Diagnostic Quiz → Mastery Update → Proof Submission → Tomorrow's Plan Changes.
@@ -110,15 +122,15 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-mono">
+        <div className="relative z-10 mt-12 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-mono">
           <span>SSC CGL · UPSC CSE · IBPS PO</span>
           <span>Tier 2–3 First</span>
         </div>
-      </div>
+      </BackgroundDots>
 
       {/* Right panel: Auth Form */}
       <div className="w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex items-center justify-center">
-        <div className="w-full max-w-md space-y-6">
+        <BlurFade delay={0.1} className="w-full max-w-md space-y-6">
           <div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
               {isSignUp ? 'Create your aspirant account' : 'Welcome back'}
@@ -131,10 +143,14 @@ export default function AuthPage() {
           </div>
 
           {errorMsg && (
-            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2">
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2"
+            >
               <strong className="font-bold">Error:</strong>
               <span>{errorMsg}</span>
-            </div>
+            </motion.div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -183,17 +199,17 @@ export default function AuthPage() {
               />
             </div>
 
-            <button
+            <ShimmerButton
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 px-4 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs sm:text-sm transition shadow-xs disabled:opacity-50 mt-2 cursor-pointer"
+              className="w-full py-3.5 px-4 text-xs sm:text-sm font-bold disabled:opacity-50 mt-2"
             >
               {loading
                 ? 'Processing...'
                 : isSignUp
                 ? 'Sign Up & Start Onboarding'
                 : 'Log In to PrepSaathi'}
-            </button>
+            </ShimmerButton>
           </form>
 
           <div className="flex items-center justify-between text-xs sm:text-sm pt-2">
@@ -231,19 +247,21 @@ export default function AuthPage() {
                 Walkthrough with Pre-Seeded Account
               </span>
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={handleDemoLogin}
               className="w-full py-3 px-4 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Launch Demo Account (Priya Sharma · 12d streak)</span>
               <ArrowRightIcon size={12} />
-            </button>
+            </motion.button>
             <p className="text-[11px] text-slate-400">
               Pre-seeded with 30 days of narrowing execution gap, 12 mastery topics, and 4 quizzes.
             </p>
           </div>
-        </div>
+        </BlurFade>
       </div>
     </div>
   );

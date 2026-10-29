@@ -15,6 +15,12 @@ import {
   ClockIcon,
 } from '../components/ui/Icons';
 import { Badge } from '../components/ui/Badge';
+import { ShimmerButton } from '../components/magicui/ShimmerButton';
+import { BorderBeam } from '../components/magicui/BorderBeam';
+import { BlurFade } from '../components/magicui/BlurFade';
+import { SpotlightCard } from '../components/reactbits/SpotlightCard';
+import { ClickSpark } from '../components/reactbits/ClickSpark';
+import { motion } from 'motion/react';
 
 interface DocItem {
   id: string;
@@ -113,7 +119,6 @@ export default function LibraryPage() {
   const [activeResult, setActiveResult] = useState<DocItem | null>(SEEDED_DOCUMENTS[0]);
   const [planAddedSuccess, setPlanAddedSuccess] = useState<string | null>(null);
 
-  // Load existing documents from Supabase if connected
   useEffect(() => {
     const fetchDocs = async () => {
       if (isDemoUser) return;
@@ -145,7 +150,6 @@ export default function LibraryPage() {
     fetchDocs();
   }, [isDemoUser]);
 
-  // Upload and AI Document Mapping Flow (§6 Screen 5)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -155,11 +159,9 @@ export default function LibraryPage() {
     setPlanAddedSuccess(null);
 
     try {
-      // Stage 1: Reading document & client-side pdf.js extraction
       setProcessingStage('reading document…');
       const extractedText = await extractTextFromPDF(file);
 
-      // Attempt upload to private 'documents' storage bucket
       const storagePath = `${currentProfile.id || 'demo'}/${Date.now()}_${file.name}`;
       try {
         if (!isDemoUser && currentProfile.id) {
@@ -169,7 +171,6 @@ export default function LibraryPage() {
         console.warn('Storage upload note:', uploadErr);
       }
 
-      // Stage 2: Mapping to syllabus via AI edge function
       setProcessingStage('mapping to syllabus…');
       const weakTopics = ['Time, Speed and Distance', 'Geometry and Mensuration', 'Economics'];
 
@@ -179,7 +180,6 @@ export default function LibraryPage() {
         text: extractedText,
       });
 
-      // Stage 3: Building quiz
       setProcessingStage('building quiz…');
       await new Promise((resolve) => setTimeout(resolve, 600));
 
@@ -204,7 +204,6 @@ export default function LibraryPage() {
         created_at: new Date().toISOString(),
       };
 
-      // Persist to Supabase if connected
       try {
         if (!isDemoUser && currentProfile.id) {
           await supabase.from('documents').insert({
@@ -233,7 +232,6 @@ export default function LibraryPage() {
     }
   };
 
-  // Add suggested task to tomorrow's plan (§6 Screen 5 item 4 & §7)
   const handleAddToTomorrowPlan = async (taskItem: { task: string; minutes: number; why: string }) => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -282,7 +280,6 @@ export default function LibraryPage() {
     );
   };
 
-  // Launch Quiz generated from this document (§6 Screen 5 item 5)
   const handleGenerateQuiz = () => {
     if (!activeResult) return;
     if (activeResult.quiz && activeResult.quiz.length > 0) {
@@ -302,229 +299,246 @@ export default function LibraryPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="pb-6 border-b border-slate-200">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
-            Library & Notes Ingestion
-          </h1>
-          <Badge variant="alert">
-            <SparklesIcon size={12} className="text-orange" />
-            <span>Product Differentiator</span>
-          </Badge>
-        </div>
-        <p className="text-xs text-slate-500 mt-1">
-          Upload your coaching notes or PDFs. PrepSaathi maps them to your exam syllabus, detects weak-topic overlaps, and builds targeted quizzes.
-        </p>
-      </div>
-
-      {/* Upload Drop Zone (§6) */}
-      <div className="bg-white rounded-2xl shadow-xs border-2 border-dashed border-slate-300 hover:border-blue/60 p-6 sm:p-8 text-center transition-all">
-        <input
-          type="file"
-          id="doc-upload"
-          accept=".pdf,application/pdf"
-          onChange={handleFileUpload}
-          disabled={isProcessing}
-          className="hidden"
-        />
-
-        {isProcessing ? (
-          <div className="flex flex-col items-center justify-center py-6 space-y-3">
-            <div className="w-10 h-10 border-3 border-blue border-t-transparent rounded-full animate-spin" />
-            {/* Real stage progress labels (§6 Screen 5: "reading document… mapping to syllabus… building quiz") */}
-            <p className="text-sm font-bold text-navy animate-pulse tracking-wide">{processingStage}</p>
-            <p className="text-xs text-slate-400">Extracting text in-browser with pdf.js · Zero token waste</p>
-          </div>
-        ) : (
-          <label htmlFor="doc-upload" className="cursor-pointer block space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue/10 flex items-center justify-center text-blue mx-auto">
-              <UploadIcon size={22} className="text-blue" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-navy">
-                Click to upload coaching PDF or drag and drop
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Lecture handouts, teacher notes, or solution sheets (PDF up to 10MB)
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => document.getElementById('doc-upload')?.click()}
-              className="px-5 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition cursor-pointer"
-            >
-              Select PDF Document
-            </button>
-          </label>
-        )}
-      </div>
-
-      {/* PROCESSED DOCUMENT CARD (Exact 5-part order specified by spec §6 Screen 5) */}
-      {activeResult && (
-        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue/10 flex items-center justify-center text-blue flex-shrink-0">
-                <FileTextIcon size={20} className="text-blue" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-base font-bold text-navy truncate max-w-lg">
-                  {activeResult.filename}
-                </h3>
-                <span className="text-[11px] text-slate-400 font-medium">Ingested Study Material Analysis</span>
-              </div>
-            </div>
-
-            <Badge variant="mastered">
-              <CheckIcon size={12} />
-              <span>Syllabus Mapped</span>
+      <BlurFade delay={0.05}>
+        <div className="pb-6 border-b border-slate-200">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
+              Library & Notes Ingestion
+            </h1>
+            <Badge variant="alert">
+              <SparklesIcon size={12} className="text-orange" />
+              <span>Product Differentiator</span>
             </Badge>
           </div>
-
-          {/* 1. Two-sentence AI Summary */}
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              1. AI Document Summary
-            </span>
-            <p className="text-sm font-medium text-slate-800 leading-relaxed">
-              {activeResult.ai_summary}
-            </p>
-          </div>
-
-          {/* 2. Topics Detected, as Chips */}
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
-              2. Syllabus Topics Detected
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {activeResult.detected_topics.map((topic, i) => (
-                <span
-                  key={i}
-                  className="text-xs font-semibold bg-slate-100 text-slate-700 px-3 py-1 rounded-lg border border-slate-200"
-                >
-                  {topic}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* 3. The Overlap Line, Highlighted (§6 Screen 5: "The overlap line, highlighted: This covers Quadratic Equations — one of your three weakest topics.") */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-orange/5 border-2 border-orange/30 text-orange-950 flex items-start gap-3.5 shadow-2xs">
-            <div className="w-8 h-8 rounded-lg bg-orange/15 flex items-center justify-center text-orange flex-shrink-0 mt-0.5">
-              <AlertTriangleIcon size={18} className="text-orange" />
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-orange block">
-                Weak-Topic Overlap Alert
-              </span>
-              <p className="text-sm font-bold text-navy">
-                This document covers{' '}
-                <span className="underline decoration-orange decoration-2">
-                  {activeResult.weak_topic_overlap.join(', ') || 'Time, Speed and Distance'}
-                </span>{' '}
-                — one of your three weakest topics.
-              </p>
-              <p className="text-xs text-slate-600">
-                Your measured diagnostic score here is <strong>32%</strong>. Working through the solved examples in this document will directly close this gap.
-              </p>
-            </div>
-          </div>
-
-          {/* 4. Suggested Tasks with "Add to tomorrow's plan" */}
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-3">
-              4. Targeted Remedial Tasks
-            </span>
-            <div className="space-y-2.5">
-              {activeResult.suggested_tasks.map((taskItem, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="space-y-0.5">
-                    <p className="text-xs sm:text-sm font-bold text-navy">{taskItem.task}</p>
-                    <p className="text-[11px] text-blue font-medium flex items-center gap-1.5">
-                      <ClockIcon size={12} className="text-blue" />
-                      <span>{taskItem.minutes} min · {taskItem.why}</span>
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleAddToTomorrowPlan(taskItem)}
-                    className="px-4 py-2 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs transition shadow-xs flex-shrink-0 cursor-pointer self-start sm:self-auto"
-                  >
-                    Add to tomorrow's plan +
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {planAddedSuccess && (
-              <p className="text-xs text-emerald-800 font-bold mt-2.5 animate-in fade-in flex items-center gap-1">
-                <CheckIcon size={13} className="text-emerald-700" />
-                <span>{planAddedSuccess}</span>
-              </p>
-            )}
-          </div>
-
-          {/* 5. "Generate 5-question quiz from this" Button */}
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={handleGenerateQuiz}
-              className="w-full py-3.5 px-4 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs sm:text-sm transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <QuizIcon size={16} />
-              <span>Generate 5-Question Quiz From This Document</span>
-            </button>
-          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Upload your coaching notes or PDFs. PrepSaathi maps them to your exam syllabus, detects weak-topic overlaps, and builds targeted quizzes.
+          </p>
         </div>
-      )}
+      </BlurFade>
 
-      {/* Document Grid Below (§6 Screen 5) */}
-      <div className="space-y-4">
-        <h3 className="text-base font-bold text-navy tracking-tight">Your Study Material Collection</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {documents.map((doc) => (
-            <div
-              key={doc.id}
-              onClick={() => setActiveResult(doc)}
-              className={`p-5 rounded-2xl border bg-white cursor-pointer transition shadow-2xs hover:border-blue/60 ${
-                activeResult?.id === doc.id ? 'border-blue ring-1 ring-blue' : 'border-slate-200/80'
-              }`}
-            >
-              <div className="flex items-start gap-3.5">
+      {/* Upload Drop Zone */}
+      <BlurFade delay={0.1}>
+        <div className="bg-white rounded-2xl shadow-xs border-2 border-dashed border-slate-300 hover:border-blue/60 p-6 sm:p-8 text-center transition-all">
+          <input
+            type="file"
+            id="doc-upload"
+            accept=".pdf,application/pdf"
+            onChange={handleFileUpload}
+            disabled={isProcessing}
+            className="hidden"
+          />
+
+          {isProcessing ? (
+            <div className="flex flex-col items-center justify-center py-6 space-y-3">
+              <div className="w-10 h-10 border-3 border-blue border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-bold text-navy animate-pulse tracking-wide">{processingStage}</p>
+              <p className="text-xs text-slate-400">Extracting text in-browser with pdf.js · Zero token waste</p>
+            </div>
+          ) : (
+            <label htmlFor="doc-upload" className="cursor-pointer block space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue/10 flex items-center justify-center text-blue mx-auto">
+                <UploadIcon size={22} className="text-blue" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-navy">
+                  Click to upload coaching PDF or drag and drop
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Lecture handouts, teacher notes, or solution sheets (PDF up to 10MB)
+                </p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                type="button"
+                onClick={() => document.getElementById('doc-upload')?.click()}
+                className="px-5 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+              >
+                Select PDF Document
+              </motion.button>
+            </label>
+          )}
+        </div>
+      </BlurFade>
+
+      {/* PROCESSED DOCUMENT CARD with SpotlightCard */}
+      {activeResult && (
+        <BlurFade delay={0.15}>
+          <SpotlightCard
+            spotlightColor="rgba(37, 99, 235, 0.06)"
+            className="p-6 sm:p-8 space-y-6"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue/10 flex items-center justify-center text-blue flex-shrink-0">
                   <FileTextIcon size={20} className="text-blue" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-xs sm:text-sm font-bold text-navy truncate">{doc.filename}</h4>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {doc.detected_topics.slice(0, 3).map((t, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-md"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-[11px]">
-                    <span className="text-slate-400 font-mono">
-                      {new Date(doc.created_at).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                      })}
-                    </span>
-                    <span className="font-bold text-orange flex items-center gap-1">
-                      <AlertTriangleIcon size={11} className="text-orange" />
-                      <span>Weak overlap: {doc.weak_topic_overlap[0] || 'Yes'}</span>
-                    </span>
-                  </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-navy truncate max-w-lg">
+                    {activeResult.filename}
+                  </h3>
+                  <span className="text-[11px] text-slate-400 font-medium">Ingested Study Material Analysis</span>
                 </div>
               </div>
+
+              <Badge variant="mastered">
+                <CheckIcon size={12} />
+                <span>Syllabus Mapped</span>
+              </Badge>
             </div>
+
+            {/* 1. Two-sentence AI Summary */}
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                1. AI Document Summary
+              </span>
+              <p className="text-sm font-medium text-slate-800 leading-relaxed">
+                {activeResult.ai_summary}
+              </p>
+            </div>
+
+            {/* 2. Topics Detected, as Chips */}
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                2. Syllabus Topics Detected
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {activeResult.detected_topics.map((topic, i) => (
+                  <span
+                    key={i}
+                    className="text-xs font-semibold bg-slate-100 text-slate-700 px-3 py-1 rounded-lg border border-slate-200"
+                  >
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. The Overlap Line, Highlighted with BorderBeam */}
+            <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-orange/5 border-2 border-orange/30 text-orange-950 flex items-start gap-3.5 shadow-2xs">
+              <BorderBeam size={180} duration={10} colorFrom="#F97316" colorTo="#FDBA74" />
+              <div className="w-8 h-8 rounded-lg bg-orange/15 flex items-center justify-center text-orange flex-shrink-0 mt-0.5">
+                <AlertTriangleIcon size={18} className="text-orange" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-orange block">
+                  Weak-Topic Overlap Alert
+                </span>
+                <p className="text-sm font-bold text-navy">
+                  This document covers{' '}
+                  <span className="underline decoration-orange decoration-2">
+                    {activeResult.weak_topic_overlap.join(', ') || 'Time, Speed and Distance'}
+                  </span>{' '}
+                  — one of your three weakest topics.
+                </p>
+                <p className="text-xs text-slate-600">
+                  Your measured diagnostic score here is <strong>32%</strong>. Working through the solved examples in this document will directly close this gap.
+                </p>
+              </div>
+            </div>
+
+            {/* 4. Suggested Tasks with ClickSpark */}
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-3">
+                4. Targeted Remedial Tasks
+              </span>
+              <div className="space-y-2.5">
+                {activeResult.suggested_tasks.map((taskItem, i) => (
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs sm:text-sm font-bold text-navy">{taskItem.task}</p>
+                      <p className="text-[11px] text-blue font-medium flex items-center gap-1.5">
+                        <ClockIcon size={12} className="text-blue" />
+                        <span>{taskItem.minutes} min · {taskItem.why}</span>
+                      </p>
+                    </div>
+                    <ClickSpark sparkColor="#2563EB">
+                      <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        type="button"
+                        onClick={() => handleAddToTomorrowPlan(taskItem)}
+                        className="px-4 py-2 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs transition shadow-xs flex-shrink-0 cursor-pointer self-start sm:self-auto"
+                      >
+                        Add to tomorrow's plan +
+                      </motion.button>
+                    </ClickSpark>
+                  </div>
+                ))}
+              </div>
+
+              {planAddedSuccess && (
+                <p className="text-xs text-emerald-800 font-bold mt-2.5 animate-in fade-in flex items-center gap-1">
+                  <CheckIcon size={13} className="text-emerald-700" />
+                  <span>{planAddedSuccess}</span>
+                </p>
+              )}
+            </div>
+
+            {/* 5. ShimmerButton for Quiz Launch */}
+            <div className="pt-2">
+              <ShimmerButton
+                onClick={handleGenerateQuiz}
+                className="w-full py-3.5 px-4 text-xs sm:text-sm font-bold"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <QuizIcon size={16} />
+                  <span>Generate 5-Question Quiz From This Document</span>
+                </div>
+              </ShimmerButton>
+            </div>
+          </SpotlightCard>
+        </BlurFade>
+      )}
+
+      {/* Document Grid Below */}
+      <div className="space-y-4">
+        <h3 className="text-base font-bold text-navy tracking-tight">Your Study Material Collection</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {documents.map((doc, idx) => (
+            <BlurFade key={doc.id} delay={0.2 + idx * 0.05}>
+              <SpotlightCard
+                onClick={() => setActiveResult(doc)}
+                className={`p-5 cursor-pointer transition shadow-2xs hover:border-blue/60 ${
+                  activeResult?.id === doc.id ? 'border-blue ring-1 ring-blue' : 'border-slate-200/80'
+                }`}
+              >
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-blue/10 flex items-center justify-center text-blue flex-shrink-0">
+                    <FileTextIcon size={20} className="text-blue" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs sm:text-sm font-bold text-navy truncate">{doc.filename}</h4>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {doc.detected_topics.slice(0, 3).map((t, i) => (
+                        <span
+                          key={i}
+                          className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-md"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-[11px]">
+                      <span className="text-slate-400 font-mono">
+                        {new Date(doc.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </span>
+                      <span className="font-bold text-orange flex items-center gap-1">
+                        <AlertTriangleIcon size={11} className="text-orange" />
+                        <span>Weak overlap: {doc.weak_topic_overlap[0] || 'Yes'}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </SpotlightCard>
+            </BlurFade>
           ))}
         </div>
       </div>
