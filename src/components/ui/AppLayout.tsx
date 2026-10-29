@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { FlameIcon, StarIcon, LogOutIcon } from './Icons';
 import { NumberTicker } from '../magicui/NumberTicker';
 import { AnimatePresence, motion } from 'motion/react';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
@@ -57,18 +58,20 @@ export default function AppLayout() {
 
         {/* Global Main Container (Max 1440px on extra-wide screens, full width responsive) */}
         <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 py-6 sm:px-6 md:px-8 md:py-8 pb-24 md:pb-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="w-full h-full"
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <ErrorBoundary fallbackTitle="Unable to load page">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="w-full h-full"
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
+          </ErrorBoundary>
         </main>
       </div>
 
