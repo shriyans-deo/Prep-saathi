@@ -155,19 +155,68 @@ export interface WeeklySummaryAIResponse {
   next_week_focus: string;
 }
 
-// Supabase Database type helper (simplified)
+// Supabase Database type helper
 export interface Database {
   public: {
     Tables: {
-      profiles: { Row: Profile; Insert: Partial<Profile> & { id: string; name: string; exam: string }; Update: Partial<Profile> };
-      squads: { Row: Squad; Insert: Partial<Squad>; Update: Partial<Squad> };
-      topics: { Row: Topic; Insert: Partial<Topic>; Update: Partial<Topic> };
-      mastery: { Row: Mastery; Insert: Partial<Mastery> & { user_id: string; topic_id: string }; Update: Partial<Mastery> };
-      daily_plans: { Row: DailyPlan; Insert: Partial<DailyPlan> & { user_id: string; plan_date: string; tasks: DailyPlan['tasks'] }; Update: Partial<DailyPlan> };
-      study_logs: { Row: StudyLog; Insert: Partial<StudyLog> & { user_id: string; log_date: string; planned_hrs: number; actual_hrs: number }; Update: Partial<StudyLog> };
-      proofs: { Row: Proof; Insert: Partial<Proof> & { user_id: string; proof_date: string; proof_type: string }; Update: Partial<Proof> };
-      quizzes: { Row: Quiz; Insert: Partial<Quiz> & { user_id: string; questions: QuizQuestion[] }; Update: Partial<Quiz> };
-      documents: { Row: Document; Insert: Partial<Document> & { user_id: string; filename: string; storage_path: string }; Update: Partial<Document> };
+      profiles: {
+        Row: Profile;
+        Insert: Partial<Profile> & { id: string; name: string };
+        Update: Partial<Profile>;
+        Relationships: [];
+      };
+      squads: {
+        Row: Squad;
+        Insert: Partial<Squad> & { name: string; exam: string };
+        Update: Partial<Squad>;
+        Relationships: [];
+      };
+      topics: {
+        Row: Topic;
+        Insert: Partial<Topic> & { exam: string; subject: string; topic_name: string };
+        Update: Partial<Topic>;
+        Relationships: [];
+      };
+      mastery: {
+        Row: Mastery;
+        Insert: Partial<Mastery> & { user_id: string; topic_id: string };
+        Update: Partial<Mastery>;
+        Relationships: [];
+      };
+      daily_plans: {
+        Row: DailyPlan;
+        Insert: Partial<DailyPlan> & { user_id: string; plan_date: string };
+        Update: Partial<DailyPlan>;
+        Relationships: [];
+      };
+      study_logs: {
+        Row: StudyLog;
+        Insert: Partial<StudyLog> & { user_id: string; log_date: string; planned_hrs: number; actual_hrs: number };
+        Update: Partial<StudyLog>;
+        Relationships: [];
+      };
+      proofs: {
+        Row: Proof;
+        Insert: Partial<Proof> & { user_id: string; proof_date: string; proof_type: string };
+        Update: Partial<Proof>;
+        Relationships: [];
+      };
+      quizzes: {
+        Row: Quiz;
+        Insert: Partial<Quiz> & { user_id: string };
+        Update: Partial<Quiz>;
+        Relationships: [];
+      };
+      documents: {
+        Row: Document;
+        Insert: Partial<Document> & { user_id: string; filename: string; storage_path: string };
+        Update: Partial<Document>;
+        Relationships: [];
+      };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
