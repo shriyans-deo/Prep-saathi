@@ -8,7 +8,7 @@ export function nextTaskIndex(tasks: PlanTask[]): number {
   return tasks.findIndex((t) => !t.completed);
 }
 
-// The sheet's rule: a task still to do is printed in rose. Doing it turns it to black ink.
+// The sheet's rule: a task still to do is printed in blue. Doing it turns it to black ink.
 export function TaskRow({
   task,
   index,

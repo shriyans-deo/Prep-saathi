@@ -9,6 +9,10 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 
 // ---- Bubble ---------------------------------------------------------------
 
+export function Logo({ className }: { className?: string }) {
+  return <img src="/logo.webp" alt="PrepSaathi" width={350} height={131} className={className} />;
+}
+
 export function Bubble({
   filled = false,
   size = 24,
@@ -105,7 +109,7 @@ export function Panel({
   tint?: boolean;
 }) {
   return (
-    <section className={cx('min-w-0', tint ? 'bg-tint rounded-sheet p-4' : 'border-t-[1.5px] border-print pt-3', className)}>
+    <section className={cx('min-w-0 rounded-sheet border border-line p-4 sm:p-5', tint ? 'bg-tint' : 'bg-sheet', className)}>
       {(title || aside) && (
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           {title && <h2 className="text-lg leading-snug font-semibold text-print-dark">{title}</h2>}
@@ -248,7 +252,7 @@ export function Field({
 }
 
 export const inputClass =
-  'block w-full min-h-11 rounded-sheet border border-[#8f7a82] bg-sheet px-3 py-2 hover:border-print focus-visible:border-ink';
+  'block w-full min-h-11 rounded-sheet border border-[#7c8fa3] bg-sheet px-3 py-2 hover:border-print focus-visible:border-ink';
 
 export function Segmented<T extends string>({
   label,
@@ -312,7 +316,7 @@ export function Dialog({
       ref={ref}
       aria-labelledby={titleId}
       onClose={onClose}
-      className={cx('m-auto w-[calc(100%-2rem)] rounded-sheet border border-print p-0 text-ink', wide ? 'max-w-xl' : 'max-w-md')}
+      className={cx('m-auto w-[calc(100%-2rem)] rounded-sheet border border-print bg-sheet p-0 text-ink', wide ? 'max-w-xl' : 'max-w-md')}
     >
       {open && (
         <div className="p-5">

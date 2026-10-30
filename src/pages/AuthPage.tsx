@@ -4,7 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePrefs } from '../lib/prefs';
 import { supabase } from '../lib/supabase';
-import { Bubble, Button, Field, Notice, Segmented, inputClass } from '../components/ui';
+import { Bubble, Button, Field, Logo, Notice, Segmented, inputClass } from '../components/ui';
 
 type Mode = 'login' | 'signup' | 'forgot' | 'recovery';
 
@@ -102,8 +102,10 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-dvh grid lg:grid-cols-[1.1fr_1fr]">
-      <section className="bg-print text-white px-6 py-8 sm:px-10 lg:px-14 lg:py-12 flex flex-col">
-        <div className="text-2xl font-bold">PrepSaathi</div>
+      <section className="bg-rail text-white px-6 py-6 sm:px-10 lg:px-14 lg:py-12 flex flex-col">
+        <div className="self-start bg-sheet rounded-sheet px-3 py-2">
+          <Logo className="w-44 h-auto" />
+        </div>
 
         <div className="lg:my-auto mt-8">
           <h1 className="text-[2.5rem] sm:text-[3.5rem] leading-[1.15] font-bold max-w-[14ch] [text-wrap:balance]">
@@ -113,11 +115,11 @@ export default function AuthPage() {
             {t('An OMR scanner ignores the printed sheet and reads only what you mark. Your preparation works the same way. PrepSaathi measures the gap between the hours you plan and the hours you do, and rewrites tomorrow from it.')}
           </p>
 
-          <ol className="mt-7 hidden sm:flex flex-col gap-2.5">
+          <ol className="mt-7 hidden lg:flex flex-col gap-2.5">
             {LOOP.map((step, i) => (
               <li key={step} className="flex items-center gap-3 font-medium">
                 <span
-                  className={`w-6 h-6 rounded-full border-[1.5px] flex-none ${i < 2 ? 'bg-ink border-ink' : 'border-white'}`}
+                  className={`w-6 h-6 rounded-full border-[1.5px] flex-none ${i < 2 ? 'bg-white border-white' : 'border-white'}`}
                   aria-hidden="true"
                 />
                 {t(step)}
@@ -126,12 +128,12 @@ export default function AuthPage() {
           </ol>
         </div>
 
-        <p className="mt-8 text-sm text-[#ffe3ea]">
+        <p className="mt-8 text-sm text-[#dce9f6]">
           {t('For SSC, IBPS, UPSC and RRB aspirants.')}
         </p>
       </section>
 
-      <section className="px-6 py-8 sm:px-10 flex flex-col">
+      <section className="bg-sheet px-6 py-8 sm:px-10 flex flex-col">
         <div className="flex justify-end">
           <Segmented
             label={t('Language')}

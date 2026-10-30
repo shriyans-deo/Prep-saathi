@@ -18,7 +18,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { usePrefs } from '../lib/prefs';
 import { effectiveStreak } from '../lib/stats';
-import { Bubble, Button, Dialog, Loading, cx } from './ui';
+import { Bubble, Button, Dialog, Loading, Logo, cx } from './ui';
 import { ErrorBoundary } from './ErrorBoundary';
 
 const PRIMARY: { to: string; label: string; icon: LucideIcon }[] = [
@@ -55,7 +55,7 @@ function SampleBanner() {
   const { t } = usePrefs();
   const navigate = useNavigate();
   return (
-    <div className="bg-ink text-white px-4 py-2 text-sm flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+    <div className="bg-warn-bg text-ink border-b border-[#e6d3a3] px-4 py-2 text-sm flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
       <span>
         <strong className="font-semibold">{t('Sample data.')}</strong>{' '}
         {t('This account and its numbers are made up to show how PrepSaathi works. It is deleted after 2 days.')}
@@ -105,11 +105,11 @@ export default function AppLayout() {
       </a>
 
       {/* Desktop rail */}
-      <aside className="hidden md:flex md:flex-col h-dvh sticky top-0 bg-print text-white p-4">
-        <Link to="/dashboard" className="text-2xl font-bold px-2 py-1 text-white no-underline">
-          PrepSaathi
+      <aside className="hidden md:flex md:flex-col h-dvh sticky top-0 bg-rail text-white p-4">
+        <Link to="/dashboard" className="block -mx-4 -mt-4 bg-sheet px-4 py-3">
+          <Logo className="w-full max-w-[12rem] h-auto mx-auto" />
         </Link>
-        {profile?.exam && <div className="px-2 text-sm text-[#ffdfe7]">{profile.exam}</div>}
+        {profile?.exam && <div className="px-2 pt-3 text-sm text-[#dce9f6]">{profile.exam}</div>}
 
         <nav aria-label={t('Main')} className="mt-5 flex flex-col gap-0.5">
           {PRIMARY.map((item) => (
@@ -119,7 +119,7 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 cx(
                   'flex items-center gap-2.5 rounded-sheet px-2.5 min-h-10 font-medium no-underline transition-colors duration-150',
-                  isActive ? 'bg-sheet text-print-dark font-semibold' : 'text-white hover:bg-print-dark'
+                  isActive ? 'bg-sheet text-print-dark font-semibold' : 'text-white hover:bg-rail-dark'
                 )
               }
             >
@@ -148,7 +148,7 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 cx(
                   'flex items-center gap-2.5 rounded-sheet px-2.5 min-h-10 text-sm font-medium no-underline transition-colors duration-150',
-                  isActive ? 'bg-sheet text-print-dark' : 'text-white hover:bg-print-dark'
+                  isActive ? 'bg-sheet text-print-dark' : 'text-white hover:bg-rail-dark'
                 )
               }
             >
@@ -159,7 +159,7 @@ export default function AppLayout() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex items-center gap-2.5 rounded-sheet px-2.5 min-h-10 text-sm font-medium text-white hover:bg-print-dark transition-colors duration-150"
+            className="flex items-center gap-2.5 rounded-sheet px-2.5 min-h-10 text-sm font-medium text-white hover:bg-rail-dark transition-colors duration-150"
           >
             <LogOut size={16} aria-hidden="true" />
             {t('Sign out')}
@@ -171,13 +171,13 @@ export default function AppLayout() {
         {isSample && <SampleBanner />}
 
         {/* Mobile top bar */}
-        <header className="md:hidden flex items-center justify-between px-4 h-13 border-b border-line bg-sheet">
-          <Link to="/dashboard" className="text-xl font-bold text-print no-underline">
-            PrepSaathi
+        <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-line bg-sheet">
+          <Link to="/dashboard" className="block">
+            <Logo className="h-11 w-auto" />
           </Link>
           <div className="flex items-center gap-3 text-sm font-semibold">
             <span className="inline-flex items-center gap-1">
-              <Flame size={16} className="text-print" aria-hidden="true" />
+              <Flame size={16} className="text-gap" aria-hidden="true" />
               {streak}
               <span className="sr-only">{t('day streak')}</span>
             </span>

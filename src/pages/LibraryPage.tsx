@@ -195,7 +195,7 @@ export default function LibraryPage() {
             onDrop={onDrop}
             className={cx(
               'rounded-sheet border-[1.5px] border-dashed p-5 text-center transition-colors duration-150',
-              dragging ? 'border-ink bg-tint' : 'border-print'
+              dragging ? 'border-ink bg-tint' : 'border-print bg-sheet'
             )}
           >
             <input
@@ -326,7 +326,7 @@ export default function LibraryPage() {
 
                   {overlap.length > 0 ? (
                     <div className="flex gap-2.5 rounded-sheet bg-tint px-3.5 py-3">
-                      <AlertTriangle size={18} className="mt-0.5 flex-none text-print" aria-hidden="true" />
+                      <AlertTriangle size={18} className="mt-0.5 flex-none text-gap" aria-hidden="true" />
                       <p className="font-semibold">
                         {t('This covers {topics}, which is among your weakest topics.', { topics: overlap.join(', ') })}
                       </p>
@@ -345,7 +345,7 @@ export default function LibraryPage() {
                             <li key={topic} className="rounded-sheet border border-line px-2 py-0.5 text-sm">
                               {topic}
                               {typeof score === 'number' && (
-                                <span className={cx('ml-1.5 font-semibold', masteryBand(score) === 'weak' && 'text-print')}>{score}%</span>
+                                <span className={cx('ml-1.5 font-semibold', masteryBand(score) === 'weak' && 'text-gap')}>{score}%</span>
                               )}
                             </li>
                           );

@@ -168,7 +168,7 @@ begin
 
   insert into weekly_reflections (user_id, week_start, headline, pattern, win, next_week_focus, source)
   values (v_uid, v_today - ((extract(isodow from v_today)::int - 1)),
-    (select 'Sample: you planned ' || round(sum(planned_hrs), 1) || ' hours and executed ' || round(sum(actual_hrs), 1)
+    (select 'Sample: you planned ' || trim_scale(round(sum(planned_hrs), 1)) || ' hours and executed ' || trim_scale(round(sum(actual_hrs), 1))
      from study_logs where user_id = v_uid and log_date between v_today - 7 and v_today - 1),
     'Your gap concentrates on Thursday and Friday evenings.',
     'Time, Speed and Distance went from 40% to 80% across two quizzes.',

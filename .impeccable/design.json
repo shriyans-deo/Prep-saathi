@@ -6,8 +6,8 @@
     "colorMeta": {
       "print": {
         "role": "primary",
-        "displayName": "Drop-out Rose",
-        "canonical": "#c4264a",
+        "displayName": "Drop-out Blue",
+        "canonical": "#1d63b0",
         "tonalRamp": [
           "#200004",
           "#4c0014",
@@ -21,8 +21,8 @@
       },
       "print-dark": {
         "role": "primary",
-        "displayName": "Deep Rose",
-        "canonical": "#a81d3d",
+        "displayName": "Deep Blue",
+        "canonical": "#174f8f",
         "tonalRamp": [
           "#200004",
           "#4c0014",
@@ -36,8 +36,8 @@
       },
       "tint": {
         "role": "primary",
-        "displayName": "Pale Rose",
-        "canonical": "#fbe9ee",
+        "displayName": "Pale Blue",
+        "canonical": "#eaf2fb",
         "tonalRamp": [
           "#12080b",
           "#2e2125",
@@ -46,13 +46,13 @@
           "#8d7d82",
           "#b1a0a5",
           "#d5c4c9",
-          "#fbe9ee"
+          "#eaf2fb"
         ]
       },
       "line": {
         "role": "primary",
-        "displayName": "Hairline Rose",
-        "canonical": "#f0c4d0",
+        "displayName": "Hairline Blue",
+        "canonical": "#b9d0e8",
         "tonalRamp": [
           "#1b020a",
           "#391924",
@@ -127,7 +127,7 @@
       "ink-soft": {
         "role": "neutral",
         "displayName": "Soft Ink",
-        "canonical": "#55505a",
+        "canonical": "#4f5a66",
         "tonalRamp": [
           "#0d0911",
           "#27232c",
@@ -142,7 +142,7 @@
       "field-border": {
         "role": "neutral",
         "displayName": "Field Border",
-        "canonical": "#b9a8ae",
+        "canonical": "#7c8fa3",
         "tonalRamp": [
           "#12070c",
           "#2e2126",
@@ -157,7 +157,7 @@
       "placeholder": {
         "role": "neutral",
         "displayName": "Placeholder",
-        "canonical": "#6d6872",
+        "canonical": "#5f6b78",
         "tonalRamp": [
           "#0d0911",
           "#27232b",
@@ -172,7 +172,7 @@
       "chart-grid": {
         "role": "neutral",
         "displayName": "Chart Grid",
-        "canonical": "#f7e3e9",
+        "canonical": "#e3edf7",
         "tonalRamp": [
           "#13070b",
           "#2f2025",
@@ -279,7 +279,7 @@
       },
       "section": {
         "displayName": "Section",
-        "purpose": "Panel titles, in Deep Rose."
+        "purpose": "Panel titles, in Deep Blue."
       },
       "body": {
         "displayName": "Body",
@@ -313,7 +313,7 @@
       {
         "name": "skeleton-pulse",
         "value": "1.4s ease-in-out infinite",
-        "purpose": "Opacity pulse to 0.45 on pale rose skeletons."
+        "purpose": "Opacity pulse to 0.45 on pale blue skeletons."
       },
       {
         "name": "spinner",
@@ -353,7 +353,7 @@
       "name": "Print Button",
       "kind": "button",
       "refersTo": "button-print",
-      "description": "The secondary action, printed in rose with a 1px outline.",
+      "description": "The secondary action, printed in blue with a 1px outline.",
       "html": "<button class=\"ds-btn-print\">Regenerate plan</button>",
       "css": ".ds-btn-print { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-sheet); font-family: var(--font-sans); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 150ms, border-color 150ms, color 150ms; background: var(--color-sheet); color: var(--color-print-dark); border: 1px solid var(--color-print); } .ds-btn-print:hover { background: var(--color-tint); } .ds-btn-print:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; } .ds-btn-print:disabled { opacity: 0.5; cursor: not-allowed; }"
     },
@@ -377,15 +377,15 @@
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Label above, hint below, a warm grey outline that turns rose on hover and black on focus.",
+      "description": "Label above, hint below, a warm grey outline that turns blue on hover and black on focus.",
       "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Hours studied</span><input class=\"ds-input\" type=\"number\" value=\"1\" /><span class=\"ds-field-hint\">This is added to today.</span></label>",
-      "css": ".ds-field { display: block; font-family: var(--font-sans); color: var(--color-ink); } .ds-field-label { display: block; font-weight: 500; margin-bottom: 4px; } .ds-field-hint { display: block; font-size: 0.875rem; color: var(--color-ink-soft); margin-top: 4px; } .ds-input { display: block; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid #b9a8ae; border-radius: var(--radius-sheet); background: var(--color-sheet); color: inherit; font: inherit; caret-color: var(--color-print); } .ds-input:hover { border-color: var(--color-print); } .ds-input:focus-visible { border-color: var(--color-ink); outline: 2px solid var(--color-ink); outline-offset: 2px; }"
+      "css": ".ds-field { display: block; font-family: var(--font-sans); color: var(--color-ink); } .ds-field-label { display: block; font-weight: 500; margin-bottom: 4px; } .ds-field-hint { display: block; font-size: 0.875rem; color: var(--color-ink-soft); margin-top: 4px; } .ds-input { display: block; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid #7c8fa3; border-radius: var(--radius-sheet); background: var(--color-sheet); color: inherit; font: inherit; caret-color: var(--color-print); } .ds-input:hover { border-color: var(--color-print); } .ds-input:focus-visible { border-color: var(--color-ink); outline: 2px solid var(--color-ink); outline-offset: 2px; }"
     },
     {
       "name": "Segmented Control",
       "kind": "chip",
       "refersTo": "segmented-item",
-      "description": "A rose-outlined choice of two or three. The selected item is black because it is the user's mark.",
+      "description": "A blue-outlined choice of two or three. The selected item is black because it is the user's mark.",
       "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Time range\"><button class=\"ds-seg-item\" aria-pressed=\"true\">7 days</button><button class=\"ds-seg-item\" aria-pressed=\"false\">30 days</button></div>",
       "css": ".ds-seg { display: inline-flex; border: 1px solid var(--color-print); border-radius: var(--radius-sheet); overflow: hidden; font-family: var(--font-sans); } .ds-seg-item { min-height: 36px; padding: 0 12px; border: none; font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; background: var(--color-sheet); color: var(--color-print-dark); transition: background-color 150ms; } .ds-seg-item:hover { background: var(--color-tint); } .ds-seg-item[aria-pressed='true'] { background: var(--color-ink); color: #fff; } .ds-seg-item:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }"
     },
@@ -393,7 +393,7 @@
       "name": "Rail Navigation",
       "kind": "nav",
       "refersTo": "rail",
-      "description": "The desktop rail. Rose, with a hollow circle per item and a filled black one on the active item.",
+      "description": "The desktop rail. Blue, with a hollow circle per item and a filled black one on the active item.",
       "html": "<nav class=\"ds-rail\" aria-label=\"Main\"><a class=\"ds-rail-item\" aria-current=\"page\" href=\"#\"><span class=\"ds-rail-mark\"></span>Dashboard</a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-mark\"></span>Today's Plan</a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-mark\"></span>Quiz</a></nav>",
       "css": ".ds-rail { display: flex; flex-direction: column; gap: 2px; width: 240px; padding: 16px; background: var(--color-print); font-family: var(--font-sans); } .ds-rail-item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: var(--radius-sheet); color: #fff; font-weight: 500; text-decoration: none; transition: background-color 150ms; } .ds-rail-item:hover { background: var(--color-print-dark); } .ds-rail-item:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; } .ds-rail-mark { flex: none; width: 16px; height: 16px; border: 1.5px solid #fff; border-radius: 50%; } .ds-rail-item[aria-current='page'] { background: var(--color-sheet); color: var(--color-print-dark); font-weight: 600; } .ds-rail-item[aria-current='page'] .ds-rail-mark { background: var(--color-ink); border-color: var(--color-ink); }"
     },
@@ -401,7 +401,7 @@
       "name": "Open Panel",
       "kind": "card",
       "refersTo": "panel-tint",
-      "description": "A section: a 1.5px rose rule and a rose title, with no box. The tinted variant is for closing prompts.",
+      "description": "A section: a 1.5px blue rule and a blue title, with no box. The tinted variant is for closing prompts.",
       "html": "<div class=\"ds-panels\"><section class=\"ds-panel\"><h2 class=\"ds-panel-title\">Time today</h2><p>42 min of 180 planned</p></section><section class=\"ds-panel-tint\"><h2 class=\"ds-panel-title\">Finished for the day?</h2><p>Submit proof to keep your streak</p></section></div>",
       "css": ".ds-panels { display: grid; gap: 32px; font-family: var(--font-sans); color: var(--color-ink); } .ds-panels p { margin: 0; } .ds-panel { border-top: 1.5px solid var(--color-print); padding-top: 12px; } .ds-panel-tint { background: var(--color-tint); border-radius: var(--radius-sheet); padding: 16px; } .ds-panel-title { margin: 0 0 12px; font-size: 1.125rem; line-height: 1.375; font-weight: 600; color: var(--color-print-dark); }"
     },
@@ -417,25 +417,25 @@
       "name": "Task Row",
       "kind": "custom",
       "refersTo": "bubble",
-      "description": "A task still to do is printed in rose. Doing it turns the row to black ink.",
+      "description": "A task still to do is printed in blue. Doing it turns the row to black ink.",
       "html": "<ul class=\"ds-tasks\"><li class=\"ds-task\" data-done=\"true\"><span class=\"ds-task-bubble\"></span><div class=\"ds-task-body\"><div class=\"ds-task-head\"><h3>Percentages</h3><span>30 min done</span></div><p>Solve 15 mixed problems</p></div></li><li class=\"ds-task\"><span class=\"ds-task-bubble\"></span><div class=\"ds-task-body\"><div class=\"ds-task-head\"><h3>Relative speed</h3><span>45 min</span></div><p>Revise circular track formulas</p><button class=\"ds-task-start\">Start</button></div></li></ul>",
       "css": ".ds-tasks { list-style: none; margin: 0; padding: 0; font-family: var(--font-sans); } .ds-task { display: flex; gap: 12px; padding: 12px 0; color: var(--color-print-dark); border-top: 1px solid var(--color-line); } .ds-task:first-child { border-top: none; } .ds-task[data-done='true'] { color: var(--color-ink); } .ds-task-bubble { flex: none; width: 26px; height: 26px; margin-top: 2px; border: 1.5px solid var(--color-print); border-radius: 50%; background: var(--color-sheet); } .ds-task[data-done='true'] .ds-task-bubble { background: var(--color-ink); border-color: var(--color-ink); } .ds-task-body { flex: 1; min-width: 0; } .ds-task-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 12px; } .ds-task-head h3 { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.375; } .ds-task-head span { font-size: 0.875rem; font-weight: 500; white-space: nowrap; } .ds-task-body p { margin: 0; font-size: 0.875rem; line-height: 1.375; } .ds-task-start { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-sheet); font-family: var(--font-sans); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 150ms, border-color 150ms, color 150ms; margin-top: 8px; background: var(--color-ink); color: #fff; border: none; } .ds-task-start:hover { background: #2c2c36; } .ds-task-start:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "The OMR Answer Sheet",
-    "overview": "An OMR scanner ignores the coloured print and reads only black marks. PrepSaathi works the same way: the plan is printed in rose, and only what the aspirant actually did is black. Every screen is a white sheet with a question printed on it and a record being filled in, so the uncomfortable number (hours planned against hours done) is visible before anything else.\n\nDensity is that of a working form: open sections under a rose rule, rows divided by hairlines, one family of type, one mark. Nothing floats and nothing glows. The sheet is familiar to the people using it, because they fill sheets like this in exam halls, and it stays legible on a mid-range Android phone on a slow connection in both English and Hindi.\n\nThe system refuses the category's stat-card dashboard with soft shadows and an indigo accent. There is no dark mode in this version: the sheet is white, and a night theme is deferred.",
+    "overview": "An OMR scanner ignores the coloured print and reads only black marks. PrepSaathi works the same way: the plan is printed in blue, and only what the aspirant actually did is black. Every screen is a white sheet with a question printed on it and a record being filled in, so the uncomfortable number (hours planned against hours done) is visible before anything else.\n\nDensity is that of a working form: open sections under a blue rule, rows divided by hairlines, one family of type, one mark. Nothing floats and nothing glows. The sheet is familiar to the people using it, because they fill sheets like this in exam halls, and it stays legible on a mid-range Android phone on a slow connection in both English and Hindi.\n\nThe system refuses the category's stat-card dashboard with soft shadows and an indigo accent. There is no dark mode in this version: the sheet is white, and a night theme is deferred.",
     "keyCharacteristics": [
-      "Rose print is the plan and the structure; black ink is what the user did.",
+      "Blue print is the plan and the structure; black ink is what the user did.",
       "One signature mark, the bubble, carries task state, quiz answers, navigation state and the 30-day record.",
       "One family, Hind, self-hosted, for Latin and Devanagari alike.",
-      "White sheet ground, no shadows, 4px corners, open sections under a 1.5px rose rule rather than closed cards.",
+      "White sheet ground, no shadows, 4px corners, open sections under a 1.5px blue rule rather than closed cards.",
       "Lite mode removes charts, proof images and animation, and the screens still work."
     ],
     "rules": [
       {
         "name": "The Drop-Out Rule",
-        "body": "Print is the plan and the structure; ink is what the user actually did. If a mark or a figure records something the user did, it is black. If it states what the sheet asks for, it is rose. Reading text and primary actions are the only other uses of black.",
+        "body": "Print is the plan and the structure; ink is what the user actually did. If a mark or a figure records something the user did, it is black. If it states what the sheet asks for, it is blue. Reading text and primary actions are the only other uses of black.",
         "section": "colors"
       },
       {
@@ -465,7 +465,7 @@
       },
       {
         "name": "The Open Section Rule",
-        "body": "A section is a 1.5px rose rule across the top with a rose title beneath it, and no box. A closed shape is reserved for the pale rose tinted panel and for things the user must act inside, such as dialogs and quiz options.",
+        "body": "A section is a 1.5px blue rule across the top with a blue title beneath it, and no box. A closed shape is reserved for the pale blue tinted panel and for things the user must act inside, such as dialogs and quiz options.",
         "section": "shapes"
       },
       {
@@ -475,7 +475,7 @@
       },
       {
         "name": "The Dashed Plan Rule",
-        "body": "Planned is dashed rose and done is solid black, in every chart and every legend. The dataviz validator flags black as too low in lightness and chroma for a categorical slot. This is accepted on purpose, because it is the brand rule. Colour-vision and contrast checks pass, and dashed against solid is the secondary encoding.",
+        "body": "Planned is dashed blue and done is solid black, in every chart and every legend. The dataviz validator flags black as too low in lightness and chroma for a categorical slot. This is accepted on purpose, because it is the brand rule. Colour-vision and contrast checks pass, and dashed against solid is the secondary encoding.",
         "section": "components"
       },
       {
@@ -485,9 +485,9 @@
       }
     ],
     "dos": [
-      "Do draw every plan, label and structural rule in rose, and every user mark and user figure in black, per the Drop-Out Rule.",
-      "Do use #a81d3d, not #c4264a, for small printed text.",
-      "Do start a section with a 1.5px rose rule and a rose title, with no box around it.",
+      "Do draw every plan, label and structural rule in blue, and every user mark and user figure in black, per the Drop-Out Rule.",
+      "Do use #174f8f, not #1d63b0, for small printed text.",
+      "Do start a section with a 1.5px blue rule and a blue title, with no box around it.",
       "Do use the bubble for anything the user marks, over a real, visually hidden input.",
       "Do keep one black primary action per task list: the next task's Start button.",
       "Do pair every chart with its table and every coloured status with an icon or text.",
@@ -500,7 +500,7 @@
       "Don't use gradient text.",
       "Don't add shadows, at rest or on hover.",
       "Don't build the category's stat-card dashboard: closed cards, soft shadows and an indigo accent.",
-      "Don't draw a planned or printed value in black, or a completed mark in rose.",
+      "Don't draw a planned or printed value in black, or a completed mark in blue.",
       "Don't use warn, good or error colours for anything other than their state.",
       "Don't add a second typeface, or load Hind from a font service.",
       "Don't add dark mode styling yet. A night theme is deferred."

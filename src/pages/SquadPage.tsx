@@ -103,7 +103,7 @@ export default function SquadPage() {
                               {t('Checked in')}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-print-dark font-semibold whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1 text-gap font-semibold whitespace-nowrap">
                               <Flag size={15} aria-hidden="true" />
                               {t('Missed so far')}
                             </span>

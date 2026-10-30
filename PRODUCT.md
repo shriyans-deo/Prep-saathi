@@ -34,7 +34,7 @@ The daily loop: morning plan generated from mastery and yesterday's completion, 
 
 ## Brand Commitments
 
-Name: PrepSaathi ("saathi" means companion). Voice: direct, honest, specific to the user's data, no filler encouragement. The user chose a new visual identity on 2026-10-31, replacing the deck's navy/blue/orange; the pitch deck will be updated to match the app.
+Name: PrepSaathi ("saathi" means companion). Voice: direct, honest, specific to the user's data, no filler encouragement. Logo: navy and orange PrepSaathi mark with the tagline "Aapki Taiyari Ka Saathi" (public/logo.webp). The user asked on 2026-10-31 for a blue system background, so the palette follows the logo: blue ground and rail, blue print, black ink, orange for the gap.
 
 ## Evidence on Hand
 

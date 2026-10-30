@@ -2,18 +2,23 @@
 name: PrepSaathi
 description: An execution engine for Indian government exam aspirants, drawn as an OMR answer sheet where only black marks count.
 colors:
-  print: "#c4264a"
-  print-dark: "#a81d3d"
-  tint: "#fbe9ee"
-  line: "#f0c4d0"
+  ground: "#cfe3f7"
+  rail: "#1e4b73"
+  rail-dark: "#163a5a"
+  gap: "#a8520c"
+  gap-fill: "#de9242"
+  print: "#1d63b0"
+  print-dark: "#174f8f"
+  tint: "#eaf2fb"
+  line: "#b9d0e8"
   ink: "#14141a"
   ink-hover: "#2c2c36"
   ink-disabled: "#8d8a92"
-  ink-soft: "#55505a"
+  ink-soft: "#4f5a66"
   sheet: "#ffffff"
-  field-border: "#b9a8ae"
-  placeholder: "#6d6872"
-  chart-grid: "#f7e3e9"
+  field-border: "#7c8fa3"
+  placeholder: "#5f6b78"
+  chart-grid: "#e3edf7"
   warn-bg: "#fdf3dc"
   good-bg: "#e6f4ec"
   error-bg: "#fbe4e4"
@@ -186,39 +191,42 @@ components:
 
 **Creative North Star: "The OMR Answer Sheet"**
 
-An OMR scanner ignores the coloured print and reads only black marks. PrepSaathi works the same way: the plan is printed in rose, and only what the aspirant actually did is black. Every screen is a white sheet with a question printed on it and a record being filled in, so the uncomfortable number (hours planned against hours done) is visible before anything else.
+An OMR scanner ignores the coloured print and reads only black marks. PrepSaathi works the same way: the plan is printed in blue, and only what the aspirant actually did is black. Every screen is a white sheet with a question printed on it and a record being filled in, so the uncomfortable number (hours planned against hours done) is visible before anything else.
 
-Density is that of a working form: open sections under a rose rule, rows divided by hairlines, one family of type, one mark. Nothing floats and nothing glows. The sheet is familiar to the people using it, because they fill sheets like this in exam halls, and it stays legible on a mid-range Android phone on a slow connection in both English and Hindi.
+Density is that of a working form: white sheets on a blue desk, rows divided by hairlines, one family of type, one mark. Nothing floats and nothing glows. The logo sets the palette: navy for the rail, a clear blue for print, orange for the gap.
 
-The system refuses the category's stat-card dashboard with soft shadows and an indigo accent. There is no dark mode in this version: the sheet is white, and a night theme is deferred.
+The system refuses gradients, glows and soft shadows. There is no dark mode in this version; a night theme is deferred.
 
 **Key Characteristics:**
-- Rose print is the plan and the structure; black ink is what the user did.
+- Blue print is the plan and the structure; black ink is what the user did.
 - One signature mark, the bubble, carries task state, quiz answers, navigation state and the 30-day record.
 - One family, Hind, self-hosted, for Latin and Devanagari alike.
-- White sheet ground, no shadows, 4px corners, open sections under a 1.5px rose rule rather than closed cards.
+- Blue ground (#cfe3f7) and navy rail (#1e4b73) from the logo. Content sits on white sheets with a 1px border and 4px corners. No shadows.
 - Lite mode removes charts, proof images and animation, and the screens still work.
 
 ## Colors
 
-Two inks on white paper: a saturated drop-out rose that structures the page and a ballpoint black that records the user, with a small set of state colours used only for meaning.
+Two inks on white paper: a saturated drop-out blue that structures the page and a ballpoint black that records the user, with a small set of state colours used only for meaning.
 
 ### Primary
-- **Drop-out Rose** (#c4264a): The desktop rail, the auth and onboarding bands, section rules, bubble outlines, planned chart lines, the gap figure in the opening sentence, and icons that sit beside printed labels. White text on it passes AA at 5.6:1.
-- **Deep Rose** (#a81d3d): The dark step for small printed text: section titles, table headers, stat labels, secondary button text, unfinished task rows, and the rail's hover state.
-- **Pale Rose** (#fbe9ee): The panel tint, info notices, button hover, skeletons and the unfilled track of progress bars.
-- **Hairline Rose** (#f0c4d0): Row dividers, table rules, chart axis lines, unselected quiz option outlines, and bubbles for days before the user joined.
+- **Drop-out Blue** (#1d63b0): The desktop rail, the auth and onboarding bands, section rules, bubble outlines, planned chart lines, the gap figure in the opening sentence, and icons that sit beside printed labels. White text on it passes AA at 5.6:1.
+- **Deep Blue** (#174f8f): The dark step for small printed text: section titles, table headers, stat labels, secondary button text, unfinished task rows, and the rail's hover state.
+- **Pale Blue** (#eaf2fb): The panel tint, info notices, button hover, skeletons and the unfilled track of progress bars.
+- **Hairline Blue** (#b9d0e8): Row dividers, table rules, chart axis lines, unselected quiz option outlines, and bubbles for days before the user joined.
 
 ### Secondary
 - **Ballpoint Black** (#14141a): Filled bubbles, the executed chart line, the user's own numbers, primary actions, and selected states. It is also the default colour of reading text, because copy has to be legible, but no plan or printed structure is ever drawn in it.
 - **Black Hover** (#2c2c36) and **Black Disabled** (#8d8a92): The hover and disabled steps of the primary action, and nothing else.
 
 ### Neutral
-- **Sheet White** (#ffffff): The ground of every screen, and text on rose or black.
-- **Soft Ink** (#55505a): Supporting copy, hints, dates, source labels and chart axis labels.
-- **Field Border** (#b9a8ae): The resting outline of inputs, a warm grey.
-- **Placeholder** (#6d6872): Placeholder text in inputs.
-- **Chart Grid** (#f7e3e9): Horizontal chart gridlines only.
+- **Sheet White** (#ffffff): The surface of every section, and text on blue or black. The logo always sits on white, because its navy lettering disappears on the rail.
+- **Desk Blue** (#cfe3f7): The system background behind every screen.
+- **Logo Navy** (#1e4b73): The rail and the auth panel. Hover step #163a5a.
+- **Gap Orange** (#a8520c for text, #de9242 at 25% for chart fill): Only for what needs attention: the gap figure, weak topics, missed check-ins and the streak flame.
+- **Soft Ink** (#4f5a66): Supporting copy, hints, dates, source labels and chart axis labels.
+- **Field Border** (#7c8fa3): The resting outline of inputs, a warm grey.
+- **Placeholder** (#5f6b78): Placeholder text in inputs.
+- **Chart Grid** (#e3edf7): Horizontal chart gridlines only.
 
 ### Semantic
 State colours sit on top of the palette and appear only when they mean something.
@@ -229,7 +237,7 @@ State colours sit on top of the palette and appear only when they mean something
 - **Error Strong** (#8e1414): Field error text, the error toast, and destructive hover text.
 
 ### Named Rules
-**The Drop-Out Rule.** Print is the plan and the structure; ink is what the user actually did. If a mark or a figure records something the user did, it is black. If it states what the sheet asks for, it is rose. Reading text and primary actions are the only other uses of black.
+**The Drop-Out Rule.** Print is the plan and the structure; ink is what the user actually did. If a mark or a figure records something the user did, it is black. If it states what the sheet asks for, it is blue. Reading text and primary actions are the only other uses of black.
 
 **The Meaning Only Rule.** Warn, good and error colours appear only on a state that is true right now. They are never decoration, section colour or category colour, and every notice also carries an icon so status never rests on colour alone.
 
@@ -242,10 +250,10 @@ State colours sit on top of the palette and appear only when they mean something
 
 ### Hierarchy
 - **Display** (700, 2.5rem on phones and 3.5rem from 640px, line-height 1.15, measure 14ch): The auth screen's single statement. The study timer uses the same size at line-height 1 with tabular figures.
-- **Headline** (700, 1.75rem on phones and 2.25rem from 640px, line-height 1.25, measure 34ch, balanced wrap): The one sentence that names the gap on the dashboard, and the quiz result sentence. Printed figures in rose, the user's in black.
+- **Headline** (700, 1.75rem on phones and 2.25rem from 640px, line-height 1.25, measure 34ch, balanced wrap): The one sentence that names the gap on the dashboard, and the quiz result sentence. Printed figures in blue, the user's in black.
 - **Title** (700, 1.75rem, line-height 1.25): Page titles and the large figures in stat blocks.
 - **Question** (600, 1.25rem on phones and 1.375rem from 640px, line-height 1.375): The quiz question. Dialog titles use 1.25rem at 700.
-- **Section** (600, 1.125rem, line-height 1.375, Deep Rose): Panel titles.
+- **Section** (600, 1.125rem, line-height 1.375, Deep Blue): Panel titles.
 - **Body** (400, 1rem, line-height 1.5): Everything else. Long copy is capped at 65ch, and page subtitles at 42rem.
 - **Action** (600, 1rem): Button text, or 0.875rem on small buttons and segmented controls.
 - **Label** (500, 0.875rem, line-height 1.43): Stat labels, table headers, hints and metadata.
@@ -258,9 +266,9 @@ State colours sit on top of the palette and appear only when they mean something
 
 ## Layout
 
-Mobile first. On phones the screen is a top bar, a single column and fixed bottom tabs; from 768px a sticky 240px rose rail replaces the tabs and top bar. Content sits in a column capped at 76rem, with a 16px gutter on phones and 24px from 640px, and 96px of bottom padding on phones so the tabs never cover the last row.
+Mobile first. On phones the screen is a top bar, a single column and fixed bottom tabs; from 768px a sticky 240px blue rail replaces the tabs and top bar. Content sits in a column capped at 76rem, with a 16px gutter on phones and 24px from 640px, and 96px of bottom padding on phones so the tabs never cover the last row.
 
-Sections stack on a 32px rhythm. Rows inside a section use 12px of padding with hairline dividers. Two-column layouts begin at 1024px (1280px on the squad screen) with the wider column first, usually at ratios between 1.4:1 and 1.7:1. Focused single-task views narrow to one measure: 42rem for the quiz and 36rem for onboarding. The auth screen splits into a rose band and a white form column from 1024px.
+Sections stack on a 32px rhythm. Rows inside a section use 12px of padding with hairline dividers. Two-column layouts begin at 1024px (1280px on the squad screen) with the wider column first, usually at ratios between 1.4:1 and 1.7:1. Focused single-task views narrow to one measure: 42rem for the quiz and 36rem for onboarding. The auth screen splits into a blue band and a white form column from 1024px.
 
 Touch targets: 44px for buttons and fields, 36px for small buttons and segmented items, 56px for bottom tabs, 52px for quiz options.
 
@@ -268,15 +276,15 @@ Touch targets: 44px for buttons and fields, 36px for small buttons and segmented
 
 ## Elevation & Depth
 
-The sheet is flat. There is no shadow vocabulary. Separation comes from rose rules, hairlines, the pale rose tint and solid fills. A dialog is set apart by a 1px rose outline over a translucent black backdrop (rgb(20 20 26 / 0.55)); a toast and a chart tooltip by being solid black.
+The sheet is flat. There is no shadow vocabulary. Separation comes from white sheets on the blue ground, 1px borders, hairlines and solid fills. A dialog is set apart by a 1px blue border and a dimmed backdrop.
 
 **The Flat Sheet Rule.** Nothing casts a shadow, at rest or on hover. Paper does not lift. State changes are colour changes.
 
 ## Shapes
 
-Two geometries only. Rectangles have small, plain 4px corners: buttons, fields, dialogs, notices, tinted panels, tooltips and images. Marks are true circles: bubbles, and the small 8px-tall progress tracks that read as a line of ink. A 2px radius is used only for skeletons, focus outlines and legend swatches. Rules and outlines are 1.5px on marks and section tops, 1px elsewhere. A dashed 1.5px rose outline marks a drop zone, the same dash that means "planned" in a chart.
+Two geometries only. Rectangles have small, plain 4px corners: buttons, fields, dialogs, notices, tinted panels, tooltips and images. Marks are true circles: bubbles, and the small 8px-tall progress tracks that read as a line of ink. A 2px radius is used only for skeletons, focus outlines and legend swatches. Rules and outlines are 1.5px on marks and section tops, 1px elsewhere. A dashed 1.5px blue outline marks a drop zone, the same dash that means "planned" in a chart.
 
-**The Open Section Rule.** A section is a 1.5px rose rule across the top with a rose title beneath it, and no box. A closed shape is reserved for the pale rose tinted panel and for things the user must act inside, such as dialogs and quiz options.
+**The Sheet Rule.** Every section is a white sheet with a 1px border on the blue ground. Page headings sit directly on the ground. Nothing sits inside a second box.
 
 ## Components
 
@@ -284,56 +292,56 @@ Two geometries only. Rectangles have small, plain 4px corners: buttons, fields, 
 Plain and heavy, like a stamp on a form.
 - **Shape:** Gently squared (4px), 44px tall with 16px side padding, or 36px and 12px when small. Semibold, with an optional 16px icon and an 8px gap.
 - **Primary (Ink):** Black with white text. At most one in a view of tasks: the next task's Start button is the only black button in the list.
-- **Print (Secondary):** White with a 1px rose outline and Deep Rose text; hover fills with Pale Rose.
-- **Ghost:** Deep Rose text with no outline; hover fills with Pale Rose. For Cancel, Back, and show-more toggles.
+- **Print (Secondary):** White with a 1px blue outline and Deep Blue text; hover fills with Pale Blue.
+- **Ghost:** Deep Blue text with no outline; hover fills with Pale Blue. For Cancel, Back, and show-more toggles.
 - **Danger:** White with a Soft Ink outline and black text, turning to the error wash and error text on hover. It is not red at rest, so that red only ever reports a consequence.
 - **Hover / Focus:** Colour transitions over 150ms. Focus is a 2px black outline offset by 2px, on every control.
 - **Loading / Disabled:** A 16px spinner appears and the button is disabled; disabled Ink goes to Black Disabled, and the others drop to 50% opacity.
 
 ### Panels
-- **Open (default):** A 1.5px Drop-out Rose rule across the top, 12px of padding beneath, Section title in Deep Rose, with an optional aside on the right. No background, no sides.
-- **Tinted:** Pale Rose fill, 4px corners, 16px padding, used sparingly for a closing prompt.
+- **Sheet (default):** White, 1px line border, 4px corners, 16 to 20px padding, section title in Deep Blue with an optional aside on the right.
+- **Tinted:** Pale Blue fill, 4px corners, 16px padding, used sparingly for a closing prompt.
 
 ### Inputs / Fields
 - **Style:** White, 1px Field Border, 4px corners, 44px tall. The label sits above in medium weight, and the hint below in Soft Ink.
-- **Focus:** Hover shifts the border to rose. Focus shifts it to black with the standard outline. The caret is rose.
+- **Focus:** Hover shifts the border to blue. Focus shifts it to black with the standard outline. The caret is blue.
 - **Error:** Error Strong text below the field, replacing the hint.
 - **Range:** The accent colour is black, since the value is the user's own.
 
 ### Segmented Control
-A 1px rose outline around 36px semibold items. The selected item is black with white text, because it is the user's mark; the others are white with Deep Rose text and a Pale Rose hover. Used for the 7/30 day range, language, and proof type.
+A 1px blue outline around 36px semibold items. The selected item is black with white text, because it is the user's mark; the others are white with Deep Blue text and a Pale Blue hover. Used for the 7/30 day range, language, and proof type.
 
 ### Navigation
-- **Rail (from 768px):** Drop-out Rose, sticky and full height, with white text and medium weight at 40px. Each primary item has a 16px hollow white circle. The active item is a white 4px block with Deep Rose semibold text and a filled black circle. Hover is Deep Rose. Secondary items and sign-out use 16px icons at the foot, under the streak and points.
-- **Bottom tabs (phones):** White with a 1px rose top rule, five columns at 56px, respecting the safe area. Inactive tabs show a 20px icon in Deep Rose. The active tab swaps its icon for a filled 20px bubble and turns its label black and semibold.
+- **Rail (from 768px):** Drop-out Blue, sticky and full height, with white text and medium weight at 40px. Each primary item has a 16px hollow white circle. The active item is a white 4px block with Deep Blue semibold text and a filled black circle. Hover is Deep Blue. Secondary items and sign-out use 16px icons at the foot, under the streak and points.
+- **Bottom tabs (phones):** White with a 1px blue top rule, five columns at 56px, respecting the safe area. Inactive tabs show a 20px icon in Deep Blue. The active tab swaps its icon for a filled 20px bubble and turns its label black and semibold.
 - **More:** A dialog listing the remaining destinations as 48px rows with hairlines.
 
 ### Bubble (signature)
 The product's one mark. It comes straight from the answer sheet the user already knows.
-- **Empty:** A true circle with a 1.5px rose outline on white. It can hold a letter in rose at half its diameter.
+- **Empty:** A true circle with a 1.5px blue outline on white. It can hold a letter in blue at half its diameter.
 - **Filled:** Solid black, with a black outline and white letter. The ink arrives through a 200ms clip-path wipe (cubic-bezier(0.16, 1, 0.3, 1)) that opens from off-centre, like one quick stroke of a pen. In forced-colours mode the fill uses CanvasText.
 - **Sizes:** 16px for quiz progress, 20px for tabs and onboarding options, 24px to 28px for tasks, quiz options and the record.
-- **Task row:** A 26px bubble beside a semibold topic. Unfinished rows are printed in Deep Rose; finished rows turn black and show minutes done. Screen readers get "Done" or "Not done" in text.
-- **Quiz option:** A row at least 52px tall with a 28px lettered bubble. It has a hairline outline at rest, rose on hover and black when selected, and sits on a real radio input. Options are shown one question at a time with no going back, like an exam hall.
-- **30-day record:** Ten columns of 28px outlined circles. A solid black dot grows inside each one in proportion to hours done against the daily target, with an 8px minimum if any time was logged, and a full bubble gets a black outline. Days before the user joined have a Hairline Rose outline. Each bubble has a text label, and a printed sentence explains the scale.
+- **Task row:** A 26px bubble beside a semibold topic. Unfinished rows are printed in Deep Blue; finished rows turn black and show minutes done. Screen readers get "Done" or "Not done" in text.
+- **Quiz option:** A row at least 52px tall with a 28px lettered bubble. It has a hairline outline at rest, blue on hover and black when selected, and sits on a real radio input. Options are shown one question at a time with no going back, like an exam hall.
+- **30-day record:** Ten columns of 28px outlined circles. A solid black dot grows inside each one in proportion to hours done against the daily target, with an 8px minimum if any time was logged, and a full bubble gets a black outline. Days before the user joined have a Hairline Blue outline. Each bubble has a text label, and a printed sentence explains the scale.
 - **Empty state:** A 28px empty bubble above a heading and a line that teaches the next action. Never placeholder figures.
 
 **The One Mark Rule.** If something can be marked, it is marked with a bubble. Checkboxes, toggles and radio buttons take this form over a visually hidden native input. Do not introduce a second completion mark.
 
 ### Charts
 Built on Recharts, loaded only when a screen draws one, without entry animation, and always paired with the same numbers as a table.
-- **Planned:** A dashed rose line, 2px, dash 6 5, with no dots.
+- **Planned:** A dashed blue line, 2px, dash 6 5, with no dots.
 - **Done:** A solid black line, 3px, with dots only at 10 points or fewer.
-- **Gap:** The area between planned and done, filled with rose at 15%.
+- **Gap:** The area between planned and done, filled with blue at 15%.
 - **Today:** A thin 1px black line from yesterday to a hollow dot (white fill, 2px black outline, radius 5). Today is in progress, so it is excluded from the gap shading and gap totals. The one exception is a brand new account whose only data point is today, which is counted so the sentence has something honest to say.
 - **Axes and grid:** Horizontal gridlines in Chart Grid. Labels at 12px in Soft Ink. No vertical grid.
 - **Tooltip:** Solid black, 4px corners, white 0.875rem text, the user's figure in semibold.
 - **Trend chart:** Both series are the user's, so both are black. Accuracy is 3px with filled dots, and consistency is 1.5px with hollow dots.
 
-**The Dashed Plan Rule.** Planned is dashed rose and done is solid black, in every chart and every legend. The dataviz validator flags black as too low in lightness and chroma for a categorical slot. This is accepted on purpose, because it is the brand rule. Colour-vision and contrast checks pass, and dashed against solid is the secondary encoding.
+**The Dashed Plan Rule.** Planned is dashed blue and done is solid black, in every chart and every legend. The dataviz validator flags black as too low in lightness and chroma for a categorical slot. This is accepted on purpose, because it is the brand rule. Colour-vision and contrast checks pass, and dashed against solid is the secondary encoding.
 
 ### Notices and Toasts
-- **Notice:** 4px corners, 12px by 14px padding, an 18px icon, and an optional action on the right. Info is Pale Rose, warn is Warn Wash, good is Good Wash, all with black text. Error is Error Wash with Error Text, announced as an alert.
+- **Notice:** 4px corners, 12px by 14px padding, an 18px icon, and an optional action on the right. Info is Pale Blue, warn is Warn Wash, good is Good Wash, all with black text. Error is Error Wash with Error Text, announced as an alert.
 - **Toast:** Fixed at the bottom, above the tabs on phones. Black for success and Error Strong for failure, with white text and an icon, for 4.5 seconds.
 
 ### Lite Mode
@@ -344,9 +352,9 @@ A persisted setting that adds a class at the document root. Charts become their 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** draw every plan, label and structural rule in rose, and every user mark and user figure in black, per the Drop-Out Rule.
-- **Do** use #a81d3d, not #c4264a, for small printed text.
-- **Do** start a section with a 1.5px rose rule and a rose title, with no box around it.
+- **Do** draw every plan, label and structural rule in blue, and every user mark and user figure in black, per the Drop-Out Rule.
+- **Do** use #174f8f, not #1d63b0, for small printed text.
+- **Do** start a section with a 1.5px blue rule and a blue title, with no box around it.
 - **Do** use the bubble for anything the user marks, over a real, visually hidden input.
 - **Do** keep one black primary action per task list: the next task's Start button.
 - **Do** pair every chart with its table and every coloured status with an icon or text.
@@ -358,8 +366,8 @@ A persisted setting that adds a class at the document root. Charts become their 
 - **Don't** place an eyebrow or small label above a heading.
 - **Don't** use gradient text.
 - **Don't** add shadows, at rest or on hover.
-- **Don't** build the category's stat-card dashboard: closed cards, soft shadows and an indigo accent.
-- **Don't** draw a planned or printed value in black, or a completed mark in rose.
+- **Don't** use a row of big-number stat cards above the content. The headline sentence already states the numbers.
+- **Don't** draw a planned or printed value in black, or a completed mark in blue.
 - **Don't** use warn, good or error colours for anything other than their state.
 - **Don't** add a second typeface, or load Hind from a font service.
 - **Don't** add dark mode styling yet. A night theme is deferred.

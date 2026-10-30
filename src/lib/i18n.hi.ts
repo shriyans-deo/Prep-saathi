@@ -195,7 +195,7 @@ export const HI: Record<string, string> = {
   "Enter a number of hours between 0.25 and 16.": "0.25 से 16 के बीच घंटे लिखें।",
   "Enter a number of minutes between 1 and 960.": "1 से 960 के बीच मिनट लिखें।",
   "The fuller the bubble, the closer you came to your {n} hour target.": "बबल जितना भरा होगा, आप अपने {n} घंटे के लक्ष्य के उतने करीब रहे।",
-  "The rose marks are printed at 40% and 70%. Below 40% is weak, above 70% is strong.": "गुलाबी निशान 40% और 70% पर छपे हैं। 40% से नीचे कमज़ोर, 70% से ऊपर मज़बूत।",
+  "The blue marks are printed at 40% and 70%. Below 40% is weak, above 70% is strong.": "नीले निशान 40% और 70% पर छपे हैं। 40% से नीचे कमज़ोर, 70% से ऊपर मज़बूत।",
   "A 20-second honesty nudge. Your squad sees that you checked in, never what you submitted.": "ईमानदारी के लिए 20 सेकंड का काम। स्क्वाड देखता है कि आपने चेक-इन किया, यह नहीं कि क्या जमा किया।",
   "Your squad sees the gap. Everyone appears only as a letter.": "आपका स्क्वाड अंतर देखता है। हर कोई सिर्फ़ एक अक्षर के रूप में दिखता है।",
   "How many minutes did you actually study?": "आपने असल में कितने मिनट पढ़ाई की?",

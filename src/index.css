@@ -8,15 +8,20 @@
 @import '@fontsource/hind/devanagari-700.css';
 @import 'tailwindcss';
 
-/* The OMR rule: "print" is what the sheet asks, "ink" is what you actually did. */
+/* The OMR rule: blue "print" is what the sheet asks, black "ink" is what you actually did. Orange marks the gap. */
 @theme {
   --color-sheet: #ffffff;
-  --color-print: #c4264a;
-  --color-print-dark: #a81d3d;
-  --color-tint: #fbe9ee;
-  --color-line: #f0c4d0;
+  --color-ground: #cfe3f7;
+  --color-rail: #1e4b73;
+  --color-rail-dark: #163a5a;
+  --color-print: #1d63b0;
+  --color-print-dark: #174f8f;
+  --color-tint: #eaf2fb;
+  --color-line: #b9d0e8;
   --color-ink: #14141a;
-  --color-ink-soft: #55505a;
+  --color-ink-soft: #4f5a66;
+  --color-gap: #a8520c;
+  --color-gap-fill: #de9242;
   --color-warn-bg: #fdf3dc;
   --color-good-bg: #e6f4ec;
   --font-sans: 'Hind', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -30,7 +35,7 @@ html {
 
 body {
   margin: 0;
-  background: var(--color-sheet);
+  background: var(--color-ground);
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: 1rem;
@@ -74,7 +79,7 @@ select {
 
 input::placeholder,
 textarea::placeholder {
-  color: #6d6872;
+  color: #5f6b78;
 }
 
 input[type='range'] {

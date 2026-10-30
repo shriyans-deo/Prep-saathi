@@ -88,7 +88,7 @@ export default function ProgressPage() {
           <Panel
             title={t('All topics, weakest first')}
           >
-            <p className="text-sm text-ink-soft mb-3">{t('The rose marks are printed at 40% and 70%. Below 40% is weak, above 70% is strong.')}</p>
+            <p className="text-sm text-ink-soft mb-3">{t('The blue marks are printed at 40% and 70%. Below 40% is weak, above 70% is strong.')}</p>
             {mastery.error && !mastery.data ? (
               <ErrorState error={mastery.error} onRetry={mastery.refetch} />
             ) : mastery.isLoading ? (
@@ -107,7 +107,7 @@ export default function ProgressPage() {
                           </span>
                           <span className="font-semibold whitespace-nowrap">
                             {m.score}%
-                            <span className={cx('font-medium', band === 'weak' ? 'text-print-dark' : 'text-ink-soft')}>
+                            <span className={cx('font-medium', band === 'weak' ? 'text-gap' : 'text-ink-soft')}>
                               {' · '}
                               {t(band === 'weak' ? 'Weak' : band === 'learning' ? 'Learning' : 'Strong')}
                             </span>

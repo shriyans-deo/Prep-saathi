@@ -17,11 +17,12 @@ import { formatDay, istToday } from '../lib/dates';
 import { usePrefs } from '../lib/prefs';
 import type { SquadMember } from '../types/database';
 
-// The sheet's rule applies to charts too: print (rose) is the plan, ink (black) is what happened.
-const PRINT = '#c4264a';
+// The sheet's rule applies to charts too: print (blue) is the plan, ink (black) is what happened, orange is the gap between them.
+const PRINT = '#1d63b0';
+const GAP = '#de9242';
 const INK = '#14141a';
-const GRID = '#f7e3e9';
-const AXIS = '#55505a';
+const GRID = '#e3edf7';
+const AXIS = '#4f5a66';
 
 function ChartTooltip({ active, rows, title }: { active?: boolean; title?: string; rows?: { label: string; value: string; strong?: boolean }[] }) {
   if (!active || !rows) return null;
@@ -61,7 +62,7 @@ export function GapChart({ points }: { points: GapPoint[] }) {
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 8, right: 8, left: -14, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={GRID} />
-          <XAxis dataKey="label" stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: '#f0c4d0' }} minTickGap={24} />
+          <XAxis dataKey="label" stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: '#b9d0e8' }} minTickGap={24} />
           <YAxis stroke={AXIS} fontSize={12} tickLine={false} axisLine={false} domain={[0, maxY]} allowDecimals={false} unit="h" />
           <Tooltip
             cursor={{ stroke: INK, strokeWidth: 1 }}
@@ -83,7 +84,7 @@ export function GapChart({ points }: { points: GapPoint[] }) {
             }}
           />
           <Area dataKey="base" stackId="gap" stroke="none" fill="transparent" isAnimationActive={false} />
-          <Area dataKey="gap" stackId="gap" stroke="none" fill={PRINT} fillOpacity={0.15} isAnimationActive={false} />
+          <Area dataKey="gap" stackId="gap" stroke="none" fill={GAP} fillOpacity={0.25} isAnimationActive={false} />
           <Line dataKey="planned_hrs" stroke={PRINT} strokeWidth={2} strokeDasharray="6 5" dot={false} isAnimationActive={false} />
           <Line
             dataKey="sofar"
@@ -121,7 +122,7 @@ export function TrendChart({ points }: { points: WeeklyPoint[] }) {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 8, left: -14, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={GRID} />
-          <XAxis dataKey="name" stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: '#f0c4d0' }} />
+          <XAxis dataKey="name" stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: '#b9d0e8' }} />
           <YAxis stroke={AXIS} fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
           <Tooltip
             cursor={{ stroke: INK, strokeWidth: 1 }}
@@ -157,10 +158,10 @@ export function SquadChart({ members }: { members: SquadMember[] }) {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={GRID} />
-          <XAxis dataKey="name" stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: '#f0c4d0' }} />
+          <XAxis dataKey="name" stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: '#b9d0e8' }} />
           <YAxis stroke={AXIS} fontSize={12} tickLine={false} axisLine={false} domain={[0, 7]} allowDecimals={false} />
           <Tooltip
-            cursor={{ fill: '#fbe9ee' }}
+            cursor={{ fill: '#eaf2fb' }}
             content={({ active, payload }) => {
               const d = payload?.[0]?.payload as (SquadMember & { name: string }) | undefined;
               return (

@@ -212,7 +212,7 @@ export default function ProofPage() {
             title={alreadyIn ? t('Checked in today') : t('Not checked in yet today')}
             aside={
               <span className="inline-flex items-center gap-1.5 font-semibold">
-                <Flame size={16} className="text-print" aria-hidden="true" />
+                <Flame size={16} className="text-gap" aria-hidden="true" />
                 {t('{n} day streak', { n: effectiveStreak(profile) })}
               </span>
             }

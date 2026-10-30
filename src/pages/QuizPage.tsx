@@ -99,7 +99,7 @@ function Taking({ quiz, onResult }: { quiz: Quiz; onResult: (result: QuizFeedbac
   };
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl bg-sheet rounded-sheet border border-line p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <p className="font-medium text-print-dark">{quiz.topic_name ?? t('Mixed')}</p>
         <ol className="flex gap-1.5" aria-label={t('Question {n} of {m}', { n: index + 1, m: quiz.questions.length })}>
@@ -207,10 +207,10 @@ function Result({ quiz, result, onAnother }: { quiz: Quiz; result: QuizFeedback;
   };
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl bg-sheet rounded-sheet border border-line p-4 sm:p-6">
       <h1 className="text-[1.75rem] sm:text-[2.25rem] leading-tight font-bold">
         {t('{n} of {m}.', { n: result.score, m: result.total })}{' '}
-        {result.concept_gap && <span className="text-print">{t('The pattern is {concept}.', { concept: result.concept_gap })}</span>}
+        {result.concept_gap && <span className="text-gap">{t('The pattern is {concept}.', { concept: result.concept_gap })}</span>}
       </h1>
       <p className="mt-1.5 text-ink-soft">{quiz.topic_name ?? t('Mixed')}</p>
       <p className="mt-3 text-lg leading-relaxed">{result.feedback}</p>

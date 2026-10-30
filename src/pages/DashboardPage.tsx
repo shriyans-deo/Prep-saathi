@@ -173,7 +173,7 @@ export default function DashboardPage() {
                 actual: <span>{summary.actual}</span>,
               }}
             />{' '}
-            <span className="text-print">{t('Gap {n}%.', { n: summary.gapPct })}</span>
+            <span className="text-gap">{t('Gap {n}%.', { n: summary.gapPct })}</span>
           </h1>
         ) : (
           <h1 className="text-[1.75rem] sm:text-[2.25rem] leading-tight font-bold max-w-[34ch] [text-wrap:balance]">
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                 <GapChart points={series} />
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-ink-soft">
                   <span className="inline-flex items-center gap-1.5">
-                    <svg width="22" height="4" aria-hidden="true"><line x1="0" y1="2" x2="22" y2="2" stroke="#c4264a" strokeWidth="2" strokeDasharray="5 3" /></svg>
+                    <svg width="22" height="4" aria-hidden="true"><line x1="0" y1="2" x2="22" y2="2" stroke="#1d63b0" strokeWidth="2" strokeDasharray="5 3" /></svg>
                     {t('Planned')}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
@@ -289,7 +289,7 @@ export default function DashboardPage() {
                     {t('Done')}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="w-4 h-3 rounded-[2px] bg-print/15" aria-hidden="true" />
+                    <span className="w-4 h-3 rounded-[2px] bg-gap-fill/25" aria-hidden="true" />
                     {t('Execution gap')}
                   </span>
                   <span className="inline-flex items-center gap-1.5">

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePrefs } from '../lib/prefs';
 import { completeOnboarding, fetchExamSubjects, fetchSquadBoard } from '../lib/data';
 import { useQuery } from '../lib/query';
-import { Bubble, Button, ErrorState, Notice, Segmented, Skeleton, cx, inputClass } from '../components/ui';
+import { Bubble, Button, ErrorState, Logo, Notice, Segmented, Skeleton, cx, inputClass } from '../components/ui';
 
 const EXAMS = ['SSC CGL', 'SSC CHSL', 'IBPS PO', 'IBPS Clerk', 'UPSC CSE', 'UPSC CAPF', 'RRB NTPC'];
 
@@ -82,14 +82,14 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="bg-print text-white px-5 py-3 flex items-center justify-between gap-4">
-        <span className="text-xl font-bold">PrepSaathi</span>
-        <span className="text-sm font-medium ml-auto">{t('Step {n} of 3', { n: step })}</span>
+      <header className="bg-sheet border-b border-line px-5 py-2 flex items-center justify-between gap-4">
+        <Logo className="h-11 w-auto" />
+        <span className="text-sm font-medium text-print-dark ml-auto">{t('Step {n} of 3', { n: step })}</span>
         <ol className="flex items-center gap-2" aria-hidden="true">
           {[1, 2, 3].map((n) => (
             <li key={n}>
               <span
-                className={cx('block w-5 h-5 rounded-full border-[1.5px]', n <= step ? 'bg-ink border-ink' : 'border-white')}
+                className={cx('block w-5 h-5 rounded-full border-[1.5px]', n <= step ? 'bg-ink border-ink' : 'border-print')}
                 aria-hidden="true"
               />
             </li>
@@ -97,7 +97,7 @@ export default function OnboardingPage() {
         </ol>
       </header>
 
-      <main className="flex-1 w-full max-w-xl mx-auto px-5 py-7">
+      <main className="flex-1 sm:flex-none w-full max-w-xl mx-auto sm:my-6 bg-sheet sm:rounded-sheet sm:border border-line px-5 py-7">
         {step === 1 && (
           <>
             <h1 className="text-[1.75rem] leading-tight font-bold mb-5">{t('Which exam are you preparing for?')}</h1>
