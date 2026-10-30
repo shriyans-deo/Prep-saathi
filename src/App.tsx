@@ -1,82 +1,120 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import AppLayout from './components/ui/AppLayout';
+import { PrefsProvider, usePrefs } from './lib/prefs';
+import { isConfigured } from './lib/supabase';
+import AppLayout from './components/AppLayout';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Button, Loading, ToastProvider } from './components/ui';
 import AuthPage from './pages/AuthPage';
-import OnboardingPage from './pages/OnboardingPage';
-import DashboardPage from './pages/DashboardPage';
-import PlanPage from './pages/PlanPage';
-import LibraryPage from './pages/LibraryPage';
-import QuizPage from './pages/QuizPage';
-import ProofPage from './pages/ProofPage';
-import SquadPage from './pages/SquadPage';
-import ProgressPage from './pages/ProgressPage';
-import WhatsAppMockPage from './pages/WhatsAppMockPage';
 
-// Route guard checking authentication and onboarding completion (§6 Screen 1)
-function ProtectedRoute({ children }: { children: React.ReactElement }) {
-  const { user, profile, isLoading } = useAuth();
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const PlanPage = lazy(() => import('./pages/PlanPage'));
+const LibraryPage = lazy(() => import('./pages/LibraryPage'));
+const QuizPage = lazy(() => import('./pages/QuizPage'));
+const ProofPage = lazy(() => import('./pages/ProofPage'));
+const SquadPage = lazy(() => import('./pages/SquadPage'));
+const ProgressPage = lazy(() => import('./pages/ProgressPage'));
+const WhatsAppPage = lazy(() => import('./pages/WhatsAppPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bg">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-blue border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-grey">Loading PrepSaathi...</p>
+function FullScreenLoading() {
+  const { t } = usePrefs();
+  return (
+    <div className="min-h-dvh flex items-center justify-center">
+      <Loading label={t('Loading...')} />
+    </div>
+  );
+}
+
+function ProfileFailed() {
+  const { t } = usePrefs();
+  const { signOut } = useAuth();
+  return (
+    <div className="min-h-dvh flex items-center justify-center p-4">
+      <div role="alert" className="max-w-md">
+        <h1 className="text-xl font-bold mb-1">{t('Could not load your account')}</h1>
+        <p className="text-ink-soft mb-4">{t('Check your connection and try again.')}</p>
+        <div className="flex gap-2">
+          <Button onClick={() => window.location.reload()}>{t('Try again')}</Button>
+          <Button variant="print" onClick={() => void signOut()}>
+            {t('Sign out')}
+          </Button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
+function RequireAuth({ children, onboarding }: { children: React.ReactElement; onboarding?: boolean }) {
+  const { user, profile, isLoading, profileError } = useAuth();
+  const location = useLocation();
 
-  // If user is logged in but hasn't completed onboarding (exam is null/empty), redirect to onboarding
-  if (!profile?.exam && window.location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
-  }
-
+  if (isLoading) return <FullScreenLoading />;
+  if (!user) return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
+  if (profileError) return <ProfileFailed />;
+  if (!profile) return <FullScreenLoading />;
+  if (!onboarding && !profile.exam) return <Navigate to="/onboarding" replace />;
   return children;
 }
 
+function NotConfigured() {
+  return (
+    <div className="min-h-dvh flex items-center justify-center p-4">
+      <div role="alert" className="max-w-md">
+        <h1 className="text-xl font-bold mb-1">PrepSaathi is not configured</h1>
+        <p className="text-ink-soft">
+          Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the environment, then rebuild. See README.md.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  if (!isConfigured) return <NotConfigured />;
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/auth" element={<AuthPage />} />
-          <Route
-            path="/onboarding"
-            element={
-              <ProtectedRoute>
-                <OnboardingPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* App routes with layout */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/plan" element={<PlanPage />} />
-            <Route path="/library" element={<LibraryPage />} />
-            <Route path="/quiz" element={<QuizPage />} />
-            <Route path="/proof" element={<ProofPage />} />
-            <Route path="/squad" element={<SquadPage />} />
-            <Route path="/progress" element={<ProgressPage />} />
-            <Route path="/whatsapp" element={<WhatsAppMockPage />} />
-          </Route>
-
-          {/* Default redirect */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <PrefsProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <ErrorBoundary>
+              <Suspense fallback={<FullScreenLoading />}>
+                <Routes>
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route
+                    path="/onboarding"
+                    element={
+                      <RequireAuth onboarding>
+                        <OnboardingPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    element={
+                      <RequireAuth>
+                        <AppLayout />
+                      </RequireAuth>
+                    }
+                  >
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/plan" element={<PlanPage />} />
+                    <Route path="/library" element={<LibraryPage />} />
+                    <Route path="/quiz" element={<QuizPage />} />
+                    <Route path="/proof" element={<ProofPage />} />
+                    <Route path="/squad" element={<SquadPage />} />
+                    <Route path="/progress" element={<ProgressPage />} />
+                    <Route path="/whatsapp" element={<WhatsAppPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                  </Route>
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </BrowserRouter>
+        </ToastProvider>
+      </PrefsProvider>
     </AuthProvider>
   );
 }

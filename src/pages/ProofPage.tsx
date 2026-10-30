@@ -1,495 +1,362 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth, DEMO_PROFILE } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import {
-  ProofIcon,
-  MicIcon,
-  FileTextIcon,
-  FlameIcon,
-  CheckIcon,
-  ArrowRightIcon,
-  AlertTriangleIcon,
-} from '../components/ui/Icons';
-import { Badge } from '../components/ui/Badge';
-import { ShimmerButton } from '../components/magicui/ShimmerButton';
-import { triggerAcademicConfetti } from '../components/magicui/Confetti';
-import { BlurFade } from '../components/magicui/BlurFade';
-import { SpotlightCard } from '../components/reactbits/SpotlightCard';
-import { ClickSpark } from '../components/reactbits/ClickSpark';
-import { motion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Camera, Check, FileText, Flame, Mic, Square, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { usePrefs } from '../lib/prefs';
+import { invalidate, useQuery } from '../lib/query';
+import { checkProof, fetchProofs, signedProofUrl, submitProof } from '../lib/data';
+import { formatRelative } from '../lib/dates';
+import { checkedInToday, effectiveStreak } from '../lib/stats';
+import { Button, EmptyState, ErrorState, Field, Notice, PageHeader, Panel, Segmented, Skeleton, cx, inputClass } from '../components/ui';
+import type { Proof } from '../types/database';
 
-interface ProofSubmission {
-  id: string;
-  proof_type: 'photo' | 'voice' | 'text';
-  summary: string;
-  ai_verdict: string;
-  timestamp: string;
-  counted: boolean;
+type Tab = 'photo' | 'voice' | 'text';
+
+const MAX_RECORDING_SECONDS = 120;
+
+// Phone photos are often over 4 MB. Shrinking keeps uploads quick on slow connections.
+async function compressImage(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('compress_failed'))), 'image/jpeg', 0.8);
+  });
 }
 
-const RECENT_SUBMISSIONS: ProofSubmission[] = [
-  {
-    id: 'proof-1',
-    proof_type: 'photo',
-    summary: 'Notebook photo: 15 relative speed problem derivations and rough scratchpad calculations.',
-    ai_verdict:
-      'Plausibility check passed: Appears to be handwritten mathematics work, consistent with today’s topic (Time, Speed and Distance).',
-    timestamp: 'Today, 09:45 PM',
-    counted: true,
-  },
-  {
-    id: 'proof-2',
-    proof_type: 'text',
-    summary: 'Solved 20 syllogism questions from 2024 CGL tier-1 paper. 18 correct answers recorded.',
-    ai_verdict: 'Plausibility check passed: Practice log matches syllabus difficulty standard.',
-    timestamp: 'Yesterday, 10:15 PM',
-    counted: true,
-  },
-  {
-    id: 'proof-3',
-    proof_type: 'voice',
-    summary: 'Voice audio memo: 45s audio debrief on Governor powers Articles 153-162.',
-    ai_verdict: 'Plausibility check passed: Verbal recall contains key constitutional provisions.',
-    timestamp: '28 Oct, 09:30 PM',
-    counted: true,
-  },
-];
+function preferredAudioType(): string {
+  for (const type of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
+  return '';
+}
+
+function ProofItem({ proof }: { proof: Proof }) {
+  const { t, lang, lite } = usePrefs();
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (lite || !proof.content_url) return;
+    let cancelled = false;
+    void signedProofUrl(proof.content_url).then((signed) => {
+      if (!cancelled) setUrl(signed);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [proof.content_url, lite]);
+
+  const Icon = proof.proof_type === 'photo' ? Camera : proof.proof_type === 'voice' ? Mic : FileText;
+  const label = proof.proof_type === 'photo' ? t('Photo') : proof.proof_type === 'voice' ? t('Voice note') : t('Text log');
+
+  return (
+    <li className="py-3 first:pt-0 last:pb-0">
+      <div className="flex items-center gap-2">
+        <Icon size={16} className="text-print flex-none" aria-hidden="true" />
+        <span className="font-medium">{label}</span>
+        <span className="ml-auto inline-flex items-center gap-1 text-sm font-medium">
+          <Check size={14} aria-hidden="true" />
+          {t('Counted')}
+        </span>
+      </div>
+      <p className="text-sm text-ink-soft">{formatRelative(proof.created_at, lang)}</p>
+      {proof.proof_type === 'photo' && url && (
+        <img src={url} alt={t('Your proof photo')} loading="lazy" className="mt-2 max-h-40 rounded-sheet border border-line" />
+      )}
+      {proof.proof_type === 'voice' && url && <audio controls preload="none" src={url} className="mt-2 w-full max-w-xs" />}
+      {proof.content_text && <p className="mt-1 text-sm line-clamp-3">{proof.content_text}</p>}
+      <p className="mt-1 text-sm text-ink-soft">{proof.ai_verdict ?? t('No AI note for this one.')}</p>
+    </li>
+  );
+}
 
 export default function ProofPage() {
-  const { profile, updateProfileState, isDemoUser } = useAuth();
-  const navigate = useNavigate();
-  const currentProfile = profile || DEMO_PROFILE;
+  const { user, profile, refreshProfile } = useAuth();
+  const { t } = usePrefs();
+  const uid = user!.id;
 
-  const [activeTab, setActiveTab] = useState<'photo' | 'voice' | 'text'>('photo');
-  const [textContent, setTextContent] = useState('');
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioSeconds, setAudioSeconds] = useState(0);
-  const [voiceRecorded, setVoiceRecorded] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissions, setSubmissions] = useState<ProofSubmission[]>(RECENT_SUBMISSIONS);
-  const [latestVerdict, setLatestVerdict] = useState<string | null>(null);
+  const proofs =useQuery(`proofs:${uid}`, () => fetchProofs(uid));
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
+  const [tab, setTab] = useState<Tab>('photo');
+  const [text, setText] = useState('');
+  const [photo, setPhoto] = useState<{ file: File; preview: string } | null>(null);
+  const [audio, setAudio] = useState<{ blob: Blob; url: string; seconds: number } | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [micError, setMicError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<{ repeat: boolean; streak: number; verdict: string | null; checking: boolean } | null>(null);
+
+  const fileInput = useRef<HTMLInputElement>(null);
+  const recorder = useRef<MediaRecorder | null>(null);
+  const stream = useRef<MediaStream | null>(null);
+  const secondsRef = useRef(0);
+
+  const alreadyIn = checkedInToday(profile);
+
+  useEffect(() => {
+    return () => {
+      stream.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!recording) return;
+    const timer = setInterval(() => {
+      secondsRef.current += 1;
+      setSeconds(secondsRef.current);
+      if (secondsRef.current >= MAX_RECORDING_SECONDS) recorder.current?.stop();
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [recording]);
+
+  const startRecording = async () => {
+    setMicError(null);
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setMicError(t('Voice recording is not supported in this browser. Use a photo or a text log.'));
+      return;
+    }
+    try {
+      const media = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.current = media;
+      const type = preferredAudioType();
+      const rec = new MediaRecorder(media, type ? { mimeType: type } : undefined);
+      const chunks: Blob[] = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      rec.onstop = () => {
+        media.getTracks().forEach((track) => track.stop());
+        const blob = new Blob(chunks, { type: (rec.mimeType || 'audio/webm').split(';')[0] });
+        setAudio({ blob, url: URL.createObjectURL(blob), seconds: secondsRef.current });
+        setRecording(false);
+      };
+      recorder.current = rec;
+      secondsRef.current = 0;
+      setSeconds(0);
+      setAudio(null);
+      rec.start();
+      setRecording(true);
+    } catch (e) {
+      console.error('Microphone error:', e);
+      setMicError(t('Could not use the microphone. Allow microphone access in your browser, or use a photo or a text log.'));
     }
   };
 
-  const handleToggleVoice = () => {
-    if (!isRecording) {
-      setIsRecording(true);
-      setAudioSeconds(0);
-      const timer = setInterval(() => {
-        setAudioSeconds((prev) => {
-          if (prev >= 60) {
-            clearInterval(timer);
-            setIsRecording(false);
-            setVoiceRecorded(true);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    } else {
-      setIsRecording(false);
-      setVoiceRecorded(true);
-    }
-  };
+  const canSubmit =
+    !submitting &&
+    !recording &&
+    ((tab === 'photo' && photo) || (tab === 'voice' && audio) || (tab === 'text' && text.trim().length >= 20));
 
-  const handleSubmitProof = async () => {
-    setIsSubmitting(true);
-    setLatestVerdict(null);
-
-    const verdictLine =
-      activeTab === 'photo'
-        ? 'Plausibility check passed: Appears to be handwritten mathematics work, consistent with today’s topic.'
-        : activeTab === 'voice'
-        ? 'Plausibility check passed: Voice reflection notes match today’s syllabus objectives.'
-        : 'Plausibility check passed: Submitted study log content meets execution criteria.';
+  const submit = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    setOutcome(null);
+    const wasIn = alreadyIn;
+    const previousStreak = effectiveStreak(profile);
 
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
-
-      if (!isDemoUser && currentProfile.id) {
-        let contentUrl: string | null = null;
-
-        if (photoFile) {
-          const storagePath = `${currentProfile.id}/${Date.now()}_${photoFile.name}`;
-          try {
-            await supabase.storage.from('proofs').upload(storagePath, photoFile);
-            contentUrl = storagePath;
-          } catch (e) {
-            console.warn('Proof photo upload note:', e);
-          }
-        }
-
-        await supabase.from('proofs').insert({
-          user_id: currentProfile.id,
-          proof_date: todayStr,
-          proof_type: activeTab,
-          content_text: activeTab === 'text' ? textContent : null,
-          content_url: contentUrl,
-          ai_verdict: verdictLine,
-        });
+      let saved: Proof;
+      if (tab === 'photo' && photo) {
+        const blob = await compressImage(photo.file);
+        saved = await submitProof(uid, { type: 'photo', file: blob, extension: 'jpg' });
+      } else if (tab === 'voice' && audio) {
+        const extension = audio.blob.type.includes('mp4') ? 'mp4' : audio.blob.type.includes('ogg') ? 'ogg' : 'webm';
+        saved = await submitProof(uid, { type: 'voice', file: audio.blob, extension, durationSeconds: audio.seconds });
+      } else {
+        saved = await submitProof(uid, { type: 'text', text: text.trim() });
       }
 
-      updateProfileState({
-        streak_count: (currentProfile.streak_count || 12) + 1,
-        total_points: (currentProfile.total_points || 2450) + 50,
-      });
+      await refreshProfile();
+      invalidate('proofs:', 'squad:');
+      setOutcome({ repeat: wasIn, streak: wasIn ? previousStreak : previousStreak + 1, verdict: null, checking: true });
 
-      triggerAcademicConfetti({ particleCount: 55, spread: 75 });
+      setText('');
+      if (photo) URL.revokeObjectURL(photo.preview);
+      setPhoto(null);
+      setAudio(null);
+      setSeconds(0);
 
-      const newSub: ProofSubmission = {
-        id: `proof-${Date.now()}`,
-        proof_type: activeTab,
-        summary:
-          activeTab === 'text'
-            ? textContent
-            : activeTab === 'photo'
-            ? `Notebook photo: ${photoFile?.name || 'Handwritten study notes'}`
-            : `Voice note: ${audioSeconds}s study debrief`,
-        ai_verdict: verdictLine,
-        timestamp: 'Just now',
-        counted: true,
-      };
-
-      setSubmissions([newSub, ...submissions]);
-      setLatestVerdict(verdictLine);
-      setTextContent('');
-      setPhotoFile(null);
-      setPhotoPreview(null);
-      setVoiceRecorded(false);
-    } catch (err) {
-      console.error('Proof submission note:', err);
+      // The AI note is a nudge. If it fails, the proof still counts.
+      try {
+        const check = await checkProof(saved.id);
+        setOutcome((current) => current && { ...current, verdict: check.verdict, checking: false });
+        invalidate('proofs:');
+      } catch (e) {
+        console.error('Proof note failed:', e);
+        setOutcome((current) => current && { ...current, checking: false });
+      }
+    } catch (e) {
+      console.error('Proof submit failed:', e);
+      setSubmitError(t('Could not submit your proof. Check your connection and try again.'));
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <BlurFade delay={0.05}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/90">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
-                Proof of Work
-              </h1>
-              <Badge variant="alert">
-                <FlameIcon size={12} className="text-orange" />
-                <span>Honesty & Friction Nudge</span>
-              </Badge>
+    <div>
+      <PageHeader
+        title={t('Proof of work')}
+        sub={t('A 20-second honesty nudge. Your squad sees that you checked in, never what you submitted.')}
+      />
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start">
+        <div className="flex flex-col gap-8">
+          <Panel
+            title={alreadyIn ? t('Checked in today') : t('Not checked in yet today')}
+            aside={
+              <span className="inline-flex items-center gap-1.5 font-semibold">
+                <Flame size={16} className="text-print" aria-hidden="true" />
+                {t('{n} day streak', { n: effectiveStreak(profile) })}
+              </span>
+            }
+          >
+            <div className="mb-4">
+              <Segmented
+                label={t('Proof type')}
+                value={tab}
+                onChange={setTab}
+                options={[
+                  { value: 'photo', label: t('Photo') },
+                  { value: 'voice', label: t('Voice') },
+                  { value: 'text', label: t('Text') },
+                ]}
+              />
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              20-second friction and honesty nudge to authenticate daily study. Increments your streak and notifies your squad.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <motion.div
-              whileHover={{ scale: 1.03 }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-orange-50 border border-orange-200 text-orange font-black text-xs sm:text-sm shadow-xs"
-            >
-              <FlameIcon size={16} className="text-orange" />
-              <span>{currentProfile.streak_count} Days Streak</span>
-            </motion.div>
-          </div>
-        </div>
-      </BlurFade>
-
-      {/* 2-Column Responsive Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* LEFT COLUMN: Honesty Mechanism & Submission Studio (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Honesty Framing Information Panel */}
-          <BlurFade delay={0.1}>
-            <div className="p-5 rounded-3xl bg-slate-50 border border-slate-200/90 text-xs text-slate-700 flex items-start gap-3.5 shadow-xs">
-              <div className="w-9 h-9 rounded-xl bg-navy/5 flex items-center justify-center text-navy flex-shrink-0 mt-0.5">
-                <AlertTriangleIcon size={18} className="text-slate-600" />
-              </div>
-              <div className="space-y-0.5">
-                <strong className="font-extrabold text-navy block text-xs">Friction & Honesty Mechanism:</strong>
-                <p className="text-slate-600 leading-relaxed">
-                  This is an accountability nudge, never hard biometric surveillance. Your genuine enforcement mechanism is peer visibility — your squad sees whether you checked in today.
-                </p>
-              </div>
-            </div>
-          </BlurFade>
-
-          {/* Submission Box with 3 Tabs */}
-          <BlurFade delay={0.15}>
-            <SpotlightCard
-              spotlightColor="rgba(249, 115, 22, 0.06)"
-              className="p-6 sm:p-8 space-y-6 rounded-3xl border border-slate-200/90 bg-white shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)]"
-            >
-              {/* Three Tabs with Animated Pill */}
-              <div className="flex rounded-2xl bg-slate-100 p-1.5 border border-slate-200">
-                {(['photo', 'voice', 'text'] as const).map((tab) => {
-                  const isActive = activeTab === tab;
-                  const label = tab === 'photo' ? 'Photo Proof' : tab === 'voice' ? 'Voice Note' : 'Text Log';
-                  const Icon = tab === 'photo' ? ProofIcon : tab === 'voice' ? MicIcon : FileTextIcon;
-
-                  return (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setActiveTab(tab)}
-                      className={`relative flex-1 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                        isActive ? 'text-blue' : 'text-slate-600 hover:text-navy'
-                      }`}
+            {tab === 'photo' && (
+              <div>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-label={t('Choose a photo')}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (!file) return;
+                    if (photo) URL.revokeObjectURL(photo.preview);
+                    setPhoto({ file, preview: URL.createObjectURL(file) });
+                  }}
+                />
+                {photo ? (
+                  <div className="relative inline-block max-w-full">
+                    <img src={photo.preview} alt={t('Your proof photo')} className="max-h-72 rounded-sheet border border-line" />
+                    <Button
+                      small
+                      variant="print"
+                      className="absolute top-2 right-2"
+                      onClick={() => {
+                        URL.revokeObjectURL(photo.preview);
+                        setPhoto(null);
+                      }}
                     >
-                      {isActive && (
-                        <motion.span
-                          layoutId="proofTabActive"
-                          className="absolute inset-0 bg-white rounded-xl shadow-xs z-0"
-                          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                      <span className="relative z-10 flex items-center gap-2">
-                        <Icon size={16} />
-                        <span>{label}</span>
-                      </span>
-                    </button>
-                  );
-                })}
+                      <Trash2 size={14} aria-hidden="true" />
+                      {t('Remove')}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-sheet border-[1.5px] border-dashed border-print p-5 text-center">
+                    <Camera size={24} className="mx-auto text-print" aria-hidden="true" />
+                    <p className="font-semibold mt-2">{t("Photograph today's notebook page")}</p>
+                    <p className="text-sm text-ink-soft mb-3">{t('Solved problems, formulas, rough work. Takes 20 seconds.')}</p>
+                    <Button onClick={() => fileInput.current?.click()}>{t('Take or choose a photo')}</Button>
+                  </div>
+                )}
               </div>
+            )}
 
-              {/* Tab 1: Photo */}
-              {activeTab === 'photo' && (
-                <div className="space-y-4">
-                  <input
-                    type="file"
-                    id="proof-photo"
-                    accept="image/*"
-                    onChange={handlePhotoSelect}
-                    className="hidden"
-                  />
-                  {photoPreview ? (
-                    <div className="relative rounded-2xl overflow-hidden border border-slate-200 max-h-72 flex justify-center bg-slate-50">
-                      <img
-                        src={photoPreview}
-                        alt="Proof preview"
-                        className="object-contain max-h-72 w-full"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhotoFile(null);
-                          setPhotoPreview(null);
-                        }}
-                        className="absolute top-3 right-3 bg-navy/80 hover:bg-navy text-white rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold transition cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => document.getElementById('proof-photo')?.click()}
-                      className="border-2 border-dashed border-slate-300 hover:border-orange/60 rounded-3xl p-8 text-center cursor-pointer transition bg-slate-50/50 hover:bg-orange-50/10"
-                    >
-                      <div className="w-12 h-12 rounded-2xl bg-orange/10 flex items-center justify-center text-orange mx-auto mb-2 shadow-inner">
-                        <ProofIcon size={22} className="text-orange" />
-                      </div>
-                      <p className="text-sm font-extrabold text-navy">
-                        Upload notebook photo of today's solved problems
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Snap a quick photo of your scratchpad, formulae, or rough calculations
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Tab 2: Voice */}
-              {activeTab === 'voice' && (
-                <div className="border border-slate-200 rounded-3xl p-6 text-center space-y-4 bg-slate-50/80">
-                  <div className="w-16 h-16 rounded-full bg-blue/10 flex items-center justify-center text-blue mx-auto shadow-inner">
-                    <MicIcon size={28} className="text-blue" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-navy">
-                      {isRecording
-                        ? `Recording in progress: 00:${String(audioSeconds).padStart(2, '0')}`
-                        : voiceRecorded
-                        ? `Audio Debrief Recorded (${audioSeconds} seconds)`
-                        : 'Record a 30-second audio debrief'}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                      Speak aloud what topics were solved, which formulas were revised, and where you met friction
-                    </p>
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.96 }}
-                    type="button"
-                    onClick={handleToggleVoice}
-                    className={`px-6 py-2.5 rounded-full text-xs font-bold transition shadow-xs cursor-pointer ${
-                      isRecording
-                        ? 'bg-red-600 text-white animate-pulse'
-                        : 'bg-navy text-white hover:bg-navy/90'
-                    }`}
-                  >
-                    {isRecording ? '⏹ Stop Recording' : voiceRecorded ? '🔁 Re-record Audio' : '⏺ Start Audio Note'}
-                  </motion.button>
-                </div>
-              )}
-
-              {/* Tab 3: Text */}
-              {activeTab === 'text' && (
-                <div className="space-y-2">
-                  <label className="block text-xs font-extrabold text-navy uppercase tracking-wider">
-                    Study Execution Log
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={textContent}
-                    onChange={(e) => setTextContent(e.target.value)}
-                    placeholder="e.g. Practiced 15 questions on relative motion from 2023 CGL Tier 1 paper. Derived harmonic mean formula for average speed."
-                    className="w-full p-4 rounded-2xl border border-slate-300 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue resize-none"
-                  />
-                </div>
-              )}
-
-              {/* Submit Button with ShimmerButton and ClickSpark */}
-              <ClickSpark sparkColor="#F97316" className="w-full">
-                <ShimmerButton
-                  background="#F97316"
-                  shimmerColor="#FED7AA"
-                  disabled={
-                    isSubmitting ||
-                    (activeTab === 'photo' && !photoFile) ||
-                    (activeTab === 'voice' && !voiceRecorded) ||
-                    (activeTab === 'text' && !textContent.trim())
-                  }
-                  onClick={handleSubmitProof}
-                  className="w-full py-4 px-4 text-xs sm:text-sm font-bold shadow-lg shadow-orange/20 disabled:opacity-40"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    {isSubmitting ? (
-                      <>
-                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Checking Plausibility & Bumping Streak...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FlameIcon size={16} />
-                        <span>Submit Proof (+50 Points & Bump Streak)</span>
-                      </>
-                    )}
-                  </div>
-                </ShimmerButton>
-              </ClickSpark>
-
-              {/* AI Plausibility Verdict Line */}
-              {latestVerdict && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 sm:p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-2"
-                >
-                  <div className="flex items-center gap-2 font-bold text-emerald-900 text-sm">
-                    <CheckIcon size={14} className="text-emerald-700" />
-                    <span>Streak Incremented to {currentProfile.streak_count} Days!</span>
-                  </div>
-                  <p className="text-slate-700 italic">"{latestVerdict}"</p>
-                  <div className="pt-2 flex items-center justify-between border-t border-emerald-200/60">
-                    <span className="text-[11px] text-emerald-800 font-semibold">
-                      Squad activity feed updated: Aspirant D completed today.
+            {tab === 'voice' && (
+              <div className="rounded-sheet border border-line p-4">
+                <p className="mb-3">{t('Say what you studied, which formulas you revised, and where you got stuck.')}</p>
+                {micError && <Notice tone="error" className="mb-3">{micError}</Notice>}
+                {recording ? (
+                  <div className="flex items-center gap-3">
+                    <Button onClick={() => recorder.current?.stop()}>
+                      <Square size={14} aria-hidden="true" />
+                      {t('Stop')}
+                    </Button>
+                    <span className="font-semibold" role="timer">
+                      {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/squad')}
-                      className="text-emerald-900 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>View Squad Board</span>
-                      <ArrowRightIcon size={11} />
-                    </button>
+                    <span className="text-sm text-ink-soft">{t('Max 2 minutes')}</span>
                   </div>
-                </motion.div>
-              )}
-            </SpotlightCard>
-          </BlurFade>
+                ) : audio ? (
+                  <div className="flex flex-col gap-2 items-start">
+                    <audio controls src={audio.url} className="w-full max-w-xs" />
+                    <Button small variant="print" onClick={startRecording}>
+                      {t('Record again')}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button onClick={startRecording}>
+                    <Mic size={16} aria-hidden="true" />
+                    {t('Start recording')}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {tab === 'text' && (
+              <Field label={t('What did you actually do today?')} hint={t('At least 20 characters.')}>
+                <textarea
+                  className={`${inputClass} resize-y`}
+                  rows={4}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={t('Solved 15 relative-speed problems from the 2023 paper. Stuck on circular tracks.')}
+                />
+              </Field>
+            )}
+
+            {submitError && <Notice tone="error" className="mt-3">{submitError}</Notice>}
+
+            <Button className="w-full mt-4" disabled={!canSubmit} loading={submitting} onClick={submit}>
+              {alreadyIn ? t('Submit another proof') : t('Submit proof and keep my streak')}
+            </Button>
+
+            {outcome && (
+              <Notice tone="good" className="mt-3">
+                <p className="font-semibold">
+                  {outcome.repeat
+                    ? t('Saved. You already checked in today, so your streak stays at {n}.', { n: outcome.streak })
+                    : t('Counted. Your streak is now {n} and you earned 50 points.', { n: outcome.streak })}
+                </p>
+                <p className="text-sm mt-0.5">
+                  {outcome.checking ? t('Getting an AI note...') : outcome.verdict ?? t('The AI note is unavailable right now. Your proof still counts.')}
+                </p>
+                <Link to="/squad" className="text-sm font-semibold mt-1 inline-block underline">
+                  {t('See your squad')}
+                </Link>
+              </Notice>
+            )}
+          </Panel>
         </div>
 
-        {/* RIGHT COLUMN: Accountability & Verified Timeline (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Card 1: Streak & Peer Accountability */}
-          <BlurFade delay={0.15}>
-            <div className="bg-[#0B1F3A] text-white rounded-3xl border border-blue-900/40 shadow-xl shadow-navy/15 p-6 sm:p-7 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-sky">Daily Accountability</span>
-                <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-0.5 rounded-full">
-                  Peer Visible
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15">
-                  <span className="text-[10px] text-slate-300 block uppercase font-bold">Current Streak</span>
-                  <span className="text-2xl font-black text-orange-400 font-mono mt-0.5 block">
-                    {currentProfile.streak_count} Days
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15">
-                  <span className="text-[10px] text-slate-300 block uppercase font-bold">Study Points</span>
-                  <span className="text-2xl font-black text-sky font-mono mt-0.5 block">
-                    {currentProfile.total_points} pts
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed pt-1">
-                Submitting your proof notifies your 5 peers in Cohort #SSC-04 and marks your status as <strong>Verified</strong> for today.
-              </p>
-            </div>
-          </BlurFade>
-
-          {/* Card 2: Recent Verified Submissions Timeline */}
-          <BlurFade delay={0.2}>
-            <div className="bg-white rounded-3xl shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] border border-slate-200/90 p-6 sm:p-7 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="text-base font-extrabold text-navy tracking-tight">Recent Verified Submissions</h3>
-                <span className="text-xs font-mono font-bold bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-md">
-                  {submissions.length} Verified
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {submissions.map((sub, idx) => (
-                  <SpotlightCard
-                    key={sub.id || idx}
-                    spotlightColor="rgba(37, 99, 235, 0.05)"
-                    className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200/80 space-y-2 text-xs"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-navy uppercase text-[10px] tracking-wider">
-                        {sub.proof_type === 'photo' ? '📷 Photo Proof' : sub.proof_type === 'voice' ? '🎙️ Voice Memo' : '📝 Text Log'}
-                      </span>
-                      <Badge variant="mastered">
-                        <CheckIcon size={10} />
-                        <span>Counted</span>
-                      </Badge>
-                    </div>
-                    <p className="text-slate-800 font-semibold leading-relaxed">{sub.summary}</p>
-                    <p className="text-[11px] text-slate-500 italic bg-white/70 p-2 rounded-xl border border-slate-100">
-                      "{sub.ai_verdict}"
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-mono text-right">
-                      {sub.timestamp}
-                    </div>
-                  </SpotlightCard>
-                ))}
-              </div>
-            </div>
-          </BlurFade>
-        </div>
+        <Panel title={t('Recent submissions')}>
+          {proofs.error && !proofs.data ? (
+            <ErrorState error={proofs.error} onRetry={proofs.refetch} />
+          ) : proofs.isLoading ? (
+            <Skeleton className="h-24" />
+          ) : (proofs.data ?? []).length === 0 ? (
+            <EmptyState title={t('Nothing submitted yet')}>{t('Your first proof starts your streak.')}</EmptyState>
+          ) : (
+            <ul className={cx('divide-y divide-line')}>
+              {(proofs.data ?? []).map((proof) => (
+                <ProofItem key={proof.id} proof={proof} />
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
     </div>
   );

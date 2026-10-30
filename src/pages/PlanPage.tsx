@@ -1,687 +1,385 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth, DEMO_PROFILE } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { invokeAI } from '../lib/ai';
-import { AI_TASKS } from '../lib/constants';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Pause, Play, RefreshCw, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { usePrefs } from '../lib/prefs';
+import { invalidate, setQueryData, useQuery } from '../lib/query';
+import { completeTask, fetchMastery, fetchTodayPlan, fetchTomorrowQueue, regeneratePlan, removeFromQueue } from '../lib/data';
+import { TaskRow, nextTaskIndex } from '../components/TaskRow';
 import {
-  SparklesIcon,
-  RefreshCwIcon,
-  ClockIcon,
-  PlayIcon,
-  PauseIcon,
-  CheckIcon,
-  ArrowRightIcon,
-  FlameIcon,
-} from '../components/ui/Icons';
-import { Badge } from '../components/ui/Badge';
-import { SpotlightCard } from '../components/reactbits/SpotlightCard';
-import { DecryptedText } from '../components/reactbits/DecryptedText';
-import { BlurFade } from '../components/magicui/BlurFade';
-import { triggerAcademicConfetti } from '../components/magicui/Confetti';
-import { motion, AnimatePresence } from 'motion/react';
+  Button,
+  Dialog,
+  ErrorState,
+  Field,
+  Notice,
+  PageHeader,
+  Panel,
+  Skeleton,
+  SourceLabel,
+  aiErrorMessage,
+  inputClass,
+  useToast,
+} from '../components/ui';
+import type { PlanTask } from '../types/database';
 
-interface PlanTask {
-  subject: string;
-  topic: string;
-  task: string;
-  minutes: number;
-  type: 'weak_topic' | 'learning' | 'revision';
-  why: string;
-  masteryScore: number;
-  completed?: boolean;
+// The running session survives reloads and phone locks, because the time is derived
+// from a start timestamp instead of being counted in memory.
+type SavedTimer = { index: number; startedAt: number | null; banked: number };
+
+const TIMER_KEY = 'prepsaathi_session';
+
+function readTimer(): SavedTimer | null {
+  try {
+    return JSON.parse(localStorage.getItem(TIMER_KEY) ?? 'null');
+  } catch {
+    return null;
+  }
 }
 
-const DEFAULT_TASKS: PlanTask[] = [
-  {
-    subject: 'Quantitative Aptitude',
-    topic: 'Time, Speed and Distance',
-    task: 'Practice 15 relative-motion train problems from standard PYQs',
-    minutes: 45,
-    type: 'weak_topic',
-    why: 'You scored 32% here on recent diagnostic (measured weak area)',
-    masteryScore: 32,
-    completed: true,
-  },
-  {
-    subject: 'Reasoning',
-    topic: 'Syllogism',
-    task: 'Solve 20 "Only a few" categorical syllogism drill sets',
-    minutes: 30,
-    type: 'learning',
-    why: 'Due for spaced reinforcement (62% mastery)',
-    masteryScore: 62,
-    completed: true,
-  },
-  {
-    subject: 'English',
-    topic: 'Reading Comprehension',
-    task: '2 editorial passages, timed solving and inference extraction',
-    minutes: 40,
-    type: 'revision',
-    why: 'Maintain your strongest area (78% mastery)',
-    masteryScore: 78,
-    completed: false,
-  },
-  {
-    subject: 'General Awareness',
-    topic: 'Indian Polity - Fundamental Rights',
-    task: 'Revise Articles 14 to 32 and solve 15 previous year prelims questions',
-    minutes: 35,
-    type: 'learning',
-    why: 'High-yield prelims concept requiring revision',
-    masteryScore: 65,
-    completed: false,
-  },
-];
+function writeTimer(timer: SavedTimer | null) {
+  try {
+    if (timer) localStorage.setItem(TIMER_KEY, JSON.stringify(timer));
+    else localStorage.removeItem(TIMER_KEY);
+  } catch {
+    // Without storage the timer still runs for this visit.
+  }
+}
 
-export default function PlanPage() {
-  const { profile, isDemoUser } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+function elapsedSeconds(timer: SavedTimer): number {
+  return timer.banked + (timer.startedAt ? Math.floor((Date.now() - timer.startedAt) / 1000) : 0);
+}
 
-  const currentProfile = profile || DEMO_PROFILE;
-  const [tasks, setTasks] = useState<PlanTask[]>(DEFAULT_TASKS);
-  const [focusNote, setFocusNote] = useState<string>(
-    'Focus on your weakest relative-motion train equations before proceeding to verbal reasoning.'
-  );
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  const [regenerateNotice, setRegenerateNotice] = useState<string | null>(null);
+function clock(total: number): string {
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
 
-  const [activeTaskIndex, setActiveTaskIndex] = useState<number | null>(null);
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
-  const [sessionNotes, setSessionNotes] = useState<string>('');
-  const [completedSuccessMsg, setCompletedSuccessMsg] = useState<string | null>(null);
+function StudySession({
+  task,
+  index,
+  onClose,
+  onDone,
+}: {
+  task: PlanTask;
+  index: number;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { t } = usePrefs();
+  const toast = useToast();
+
+  const [timer, setTimer] = useState<SavedTimer>(() => {
+    const saved = readTimer();
+    return saved?.index === index ? saved : { index, startedAt: Date.now(), banked: 0 };
+  });
+  const [seconds, setSeconds] = useState(() => elapsedSeconds(timer));
+  const [notes, setNotes] = useState('');
+  const [finishing, setFinishing] = useState(false);
+  const [minutes, setMinutes] = useState('');
+  const [minutesError, setMinutesError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const loadCachedPlan = async () => {
-      const today = new Date().toISOString().split('T')[0];
-      try {
-        if (!isDemoUser && currentProfile.id) {
-          const { data } = await supabase
-            .from('daily_plans')
-            .select('*')
-            .eq('user_id', currentProfile.id)
-            .eq('plan_date', today)
-            .maybeSingle();
+    writeTimer(timer);
+    setSeconds(elapsedSeconds(timer));
+    if (!timer.startedAt) return;
+    const tick = setInterval(() => setSeconds(elapsedSeconds(timer)), 1000);
+    return () => clearInterval(tick);
+  }, [timer]);
 
-          if (data && data.tasks && (data.tasks as any).tasks) {
-            setTasks((data.tasks as any).tasks);
-            if ((data.tasks as any).focus_note) {
-              setFocusNote((data.tasks as any).focus_note);
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('Using local plan cache:', e);
-      }
-    };
-
-    loadCachedPlan();
-  }, [currentProfile.id, isDemoUser]);
-
-  useEffect(() => {
-    const startIndex = searchParams.get('start');
-    if (startIndex !== null) {
-      const idx = parseInt(startIndex, 10);
-      if (!isNaN(idx) && tasks[idx]) {
-        openStudySession(idx);
-      }
-    }
-  }, [searchParams, tasks.length]);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (isTimerRunning && secondsRemaining > 0) {
-      interval = setInterval(() => {
-        setSecondsRemaining((prev) => prev - 1);
-      }, 1000);
-    } else if (secondsRemaining === 0 && isTimerRunning) {
-      setIsTimerRunning(false);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isTimerRunning, secondsRemaining]);
-
-  const openStudySession = (index: number) => {
-    const task = tasks[index];
-    setActiveTaskIndex(index);
-    setSecondsRemaining(task.minutes * 60);
-    setIsTimerRunning(true);
-    setSessionNotes('');
-    setCompletedSuccessMsg(null);
-  };
-
-  const closeStudySession = () => {
-    setActiveTaskIndex(null);
-    setIsTimerRunning(false);
-  };
-
-  const handleCompleteTask = async () => {
-    if (activeTaskIndex === null) return;
-    const task = tasks[activeTaskIndex];
-
-    const updatedTasks = [...tasks];
-    updatedTasks[activeTaskIndex] = {
-      ...task,
-      completed: true,
-      masteryScore: Math.min(100, (task.masteryScore || 50) + 4),
-    };
-    setTasks(updatedTasks);
-
-    triggerAcademicConfetti({ particleCount: 50, spread: 65 });
-
-    const completedCount = updatedTasks.filter((t) => t.completed).length;
-    const today = new Date().toISOString().split('T')[0];
-
-    try {
-      if (!isDemoUser && currentProfile.id) {
-        await supabase.from('daily_plans').upsert({
-          user_id: currentProfile.id,
-          plan_date: today,
-          tasks: {
-            tasks: updatedTasks,
-            total_minutes: updatedTasks.reduce((acc, t) => acc + t.minutes, 0),
-            focus_note: focusNote,
-          },
-          completed_count: completedCount,
-        });
-
-        const addedHours = +(task.minutes / 60).toFixed(2);
-        const { data: existingLog } = await supabase
-          .from('study_logs')
-          .select('actual_hrs')
-          .eq('user_id', currentProfile.id)
-          .eq('log_date', today)
-          .maybeSingle();
-
-        const newActual = +(Number(existingLog?.actual_hrs || 0) + addedHours).toFixed(1);
-
-        await supabase.from('study_logs').upsert({
-          user_id: currentProfile.id,
-          log_date: today,
-          planned_hrs: currentProfile.daily_target_hrs,
-          actual_hrs: newActual,
-          topics_covered: [task.topic],
-        });
-      }
-    } catch (e) {
-      console.warn('Completed task writeback:', e);
-    }
-
-    setCompletedSuccessMsg(
-      `Execution logged! Task marked Done. Mastery score nudged to ${task.masteryScore + 4}%. Study logs updated.`
+  const running = timer.startedAt !== null;
+  const toggle = () =>
+    setTimer((current) =>
+      current.startedAt
+        ? { ...current, banked: elapsedSeconds(current), startedAt: null }
+        : { ...current, startedAt: Date.now() }
     );
-    setTimeout(() => {
-      closeStudySession();
-      setCompletedSuccessMsg(null);
-    }, 1500);
+
+  const beginFinish = () => {
+    setTimer((current) => ({ ...current, banked: elapsedSeconds(current), startedAt: null }));
+    setMinutes(String(Math.max(1, Math.round(seconds / 60))));
+    setFinishing(true);
   };
 
-  const handleRegeneratePlan = async () => {
-    setIsRegenerating(true);
-    setRegenerateNotice(null);
-
+  const save = async () => {
+    const value = Math.round(Number(minutes));
+    if (!Number.isFinite(value) || value < 1 || value > 960) {
+      setMinutesError(t('Enter a number of minutes between 1 and 960.'));
+      return;
+    }
+    setMinutesError(null);
+    setSaving(true);
     try {
-      const payload = {
-        exam: currentProfile.exam,
-        daily_target_hrs: currentProfile.daily_target_hrs,
-        weak_topics: ['Time, Speed and Distance', 'Geometry and Mensuration', 'Economics'],
-        learning_topics: ['Syllogism', 'Number System', 'Indian Polity'],
-        yesterday: {
-          planned: 6.0,
-          actual: 3.5,
-          completed_tasks: 2,
-          total_tasks: 4,
-        },
-        last_quiz: {
-          topic: 'Time, Speed and Distance',
-          score: 40,
-        },
-      };
-
-      const aiResponse = await invokeAI(AI_TASKS.DAILY_PLAN, payload);
-
-      if (aiResponse?.tasks && Array.isArray(aiResponse.tasks)) {
-        const enriched = aiResponse.tasks.map((t: any) => ({
-          ...t,
-          masteryScore: t.type === 'weak_topic' ? 32 : t.type === 'learning' ? 62 : 78,
-          completed: false,
-        }));
-        setTasks(enriched);
-        if (aiResponse.focus_note) setFocusNote(aiResponse.focus_note);
-
-        const today = new Date().toISOString().split('T')[0];
-        if (!isDemoUser && currentProfile.id) {
-          await supabase.from('daily_plans').upsert({
-            user_id: currentProfile.id,
-            plan_date: today,
-            tasks: {
-              tasks: enriched,
-              total_minutes: aiResponse.total_minutes || 140,
-              focus_note: aiResponse.focus_note || focusNote,
-            },
-            completed_count: 0,
-            generated_by_ai: true,
-          });
-        }
-
-        setRegenerateNotice(
-          `Plan successfully adapted by Groq AI! Yesterday's execution fell below 60%, so total duration was reduced by 25% to protect momentum.`
-        );
-      }
-    } catch (err) {
-      console.error('Plan regeneration failed:', err);
-      setRegenerateNotice(
-        'AI engine adjusted plan: Focused heavily on relative motion kinematics.'
+      const result = await completeTask(index, value, notes);
+      writeTimer(null);
+      invalidate('plan:', 'logs:', 'mastery:', 'squad:');
+      toast(
+        typeof result.mastery_after === 'number'
+          ? t('Marked. {n} min logged, {topic} is now {score}%.', { n: value, topic: task.topic, score: result.mastery_after })
+          : t('Marked. {n} min logged.', { n: value })
       );
-    } finally {
-      setIsRegenerating(false);
+      onDone();
+    } catch (e) {
+      console.error('Could not complete task:', e);
+      toast(t('Could not save. Check your connection and try again.'), 'error');
+      setSaving(false);
     }
   };
-
-  const formatTimer = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
-  const activeTask = activeTaskIndex !== null ? tasks[activeTaskIndex] : null;
-
-  const totalMinutes = tasks.reduce((acc, t) => acc + (t.minutes || 0), 0);
-  const completedMinutes = tasks.filter((t) => t.completed).reduce((acc, t) => acc + (t.minutes || 0), 0);
-  const completedTasksCount = tasks.filter((t) => t.completed).length;
-  const completionPct = totalMinutes > 0 ? Math.round((completedMinutes / totalMinutes) * 100) : 0;
 
   return (
-    <div className="space-y-8">
-      {/* Header with Regenerate Action */}
-      <BlurFade delay={0.05}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/90">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-navy tracking-tight">
-                Today's Execution Workspace
-              </h1>
-              <Badge variant="primary">
-                <SparklesIcon size={13} className="text-blue" />
-                <span>Grounded AI Engine</span>
-              </Badge>
+    <div>
+      <p className="text-ink mb-4">
+        {task.task}
+        {task.subject && <span className="text-ink-soft"> · {task.subject}</span>}
+      </p>
+
+      {!finishing ? (
+        <>
+          <div className="text-center py-4 border-y border-line mb-4">
+            <div className="text-[3.5rem] leading-none font-bold tabular-nums" role="timer" aria-label={t('Time studied')}>
+              {clock(seconds)}
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Grounded in your measured mastery scores and adapted based on yesterday's completion.
-            </p>
+            <p className="text-sm text-ink-soft mt-1">{t('Planned: {n} min', { n: task.minutes })}</p>
+            <Button variant="print" small className="mt-3" onClick={toggle}>
+              {running ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+              {running ? t('Pause') : t('Resume')}
+            </Button>
           </div>
 
-          <div className="flex flex-col items-start sm:items-end gap-1.5 flex-shrink-0">
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              type="button"
-              onClick={handleRegeneratePlan}
-              disabled={isRegenerating}
-              className="px-5 py-3 rounded-2xl bg-[#0B1F3A] hover:bg-[#162E52] text-white font-bold text-xs shadow-md shadow-navy/20 transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              <RefreshCwIcon size={14} className={isRegenerating ? 'animate-spin text-sky' : ''} />
-              <span>{isRegenerating ? 'Analyzing Mastery...' : 'Regenerate Plan with Groq AI'}</span>
-            </motion.button>
-            <span className="text-[11px] text-slate-400 italic font-medium">
-              uses yesterday's completion
-            </span>
-          </div>
-        </div>
-      </BlurFade>
+          <Field label={t('Notes (optional)')}>
+            <textarea
+              className={`${inputClass} resize-y`}
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t('Question numbers, formulas, where you got stuck')}
+            />
+          </Field>
 
-      {regenerateNotice && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-xs text-blue-950 flex items-start gap-3 shadow-xs"
+          <div className="flex flex-wrap justify-end gap-2 mt-4">
+            <Button variant="ghost" onClick={onClose}>
+              {t('Keep running and close')}
+            </Button>
+            <Button onClick={beginFinish}>{t('Mark done')}</Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <Field label={t('How many minutes did you actually study?')} hint={t('This is what counts towards your gap, so keep it honest.')} error={minutesError}>
+            <input
+              className={inputClass}
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="960"
+              value={minutes}
+              onChange={(e) => setMinutes(e.target.value)}
+            />
+          </Field>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="ghost" onClick={() => setFinishing(false)}>
+              {t('Back')}
+            </Button>
+            <Button loading={saving} onClick={save}>
+              {t('Save and fill the bubble')}
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function PlanPage() {
+  const { user } = useAuth();
+  const { t } = usePrefs();
+  const toast = useToast();
+  const uid = user!.id;
+  const [params, setParams] = useSearchParams();
+
+  const plan = useQuery('plan:today', fetchTodayPlan);
+  const mastery = useQuery(`mastery:${uid}`, () => fetchMastery(uid));
+  const queue = useQuery(`queue:${uid}`, () => fetchTomorrowQueue(uid));
+
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
+
+  const tasks = useMemo(() => plan.data?.tasks.tasks ?? [], [plan.data]);
+  const nextIndex = nextTaskIndex(tasks);
+  const doneMinutes = tasks.filter((x) => x.completed).reduce((s, x) => s + (x.minutes_spent ?? x.minutes), 0);
+  const totalMinutes = plan.data?.tasks.total_minutes ?? 0;
+  const pct = totalMinutes > 0 ? Math.min(100, Math.round((doneMinutes / totalMinutes) * 100)) : 0;
+
+  const scoreByTopic = useMemo(
+    () => new Map((mastery.data ?? []).map((m) => [m.topics.topic_name, m.score])),
+    [mastery.data]
+  );
+
+  // ?start=<index> opens the session; a timer left running reopens on its own.
+  const startParam = params.get('start');
+  const activeIndex = startParam !== null ? Number(startParam) : null;
+  const activeTask = activeIndex !== null && tasks[activeIndex] && !tasks[activeIndex].completed ? tasks[activeIndex] : null;
+  const [resumable, setResumable] = useState<SavedTimer | null>(() => readTimer());
+
+  const closeSession = useCallback(() => {
+    setParams({}, { replace: true });
+    setResumable(readTimer());
+  }, [setParams]);
+
+  const regenerate = async () => {
+    setRegenerating(true);
+    setRegenError(null);
+    try {
+      const next = await regeneratePlan();
+      setQueryData('plan:today', next);
+      invalidate('logs:', 'queue:');
+      toast(t('Plan rewritten from your latest scores.'));
+    } catch (e) {
+      setRegenError(aiErrorMessage(e, t));
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  const removeQueued = async (id: string) => {
+    try {
+      await removeFromQueue(id);
+      invalidate('queue:');
+    } catch (e) {
+      console.error('Could not remove queued task:', e);
+      toast(t('Could not save. Check your connection and try again.'), 'error');
+    }
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title={t("Today's plan")}
+        sub={plan.data?.tasks.focus_note || undefined}
+        action={
+          <div className="flex flex-col sm:items-end gap-1">
+            <Button variant="print" loading={regenerating} onClick={regenerate} disabled={!plan.data}>
+              {!regenerating && <RefreshCw size={16} aria-hidden="true" />}
+              {t('Regenerate plan')}
+            </Button>
+            <span className="text-sm text-ink-soft">{t("Uses yesterday's completion")}</span>
+          </div>
+        }
+      />
+
+      {regenError && <Notice tone="error" className="mb-4">{regenError}</Notice>}
+
+      {plan.data?.tasks.adaptation_note && <Notice className="mb-4">{plan.data.tasks.adaptation_note}</Notice>}
+
+      {resumable && !activeTask && tasks[resumable.index] && !tasks[resumable.index].completed && (
+        <Notice
+          className="mb-4"
+          action={
+            <Button small onClick={() => setParams({ start: String(resumable.index) })}>
+              {t('Back to timer')}
+            </Button>
+          }
         >
-          <SparklesIcon size={18} className="text-blue flex-shrink-0 mt-0.5" />
-          <div className="leading-relaxed">
-            <strong className="font-extrabold text-blue">Adaptive Feedback Loop:</strong> {regenerateNotice}
-          </div>
-        </motion.div>
+          {t('Your timer for {topic} is still running.', { topic: tasks[resumable.index].topic })}
+        </Notice>
       )}
 
-      {/* 2-Column Responsive Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* MAIN COLUMN: Focus & Tasks (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Focus Note Card */}
-          <BlurFade delay={0.1}>
-            <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue/15 border border-blue/20 flex items-center justify-center text-blue flex-shrink-0">
-                <SparklesIcon size={22} className="text-blue" />
-              </div>
-              <div className="space-y-1">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-blue block">
-                  Today's Primary Focus Note
-                </span>
-                <p className="text-base font-bold text-navy leading-relaxed">
-                  <DecryptedText text={focusNote} speed={30} className="font-bold text-navy" />
-                </p>
-              </div>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] items-start">
+        <Panel>
+          {plan.error && !plan.data ? (
+            <ErrorState error={plan.error} onRetry={plan.refetch} />
+          ) : plan.isLoading ? (
+            <div className="flex flex-col gap-3" role="status" aria-label={t('Building your plan...')}>
+              <p className="text-ink-soft">{t('Building your plan from your scores...')}</p>
+              <Skeleton className="h-20" />
+              <Skeleton className="h-20" />
+              <Skeleton className="h-20" />
             </div>
-          </BlurFade>
-
-          {/* Task List Workspace */}
-          <div className="space-y-4">
-            {tasks.map((task, idx) => (
-              <BlurFade key={idx} delay={0.15 + idx * 0.05}>
-                <SpotlightCard
-                  spotlightColor="rgba(37, 99, 235, 0.08)"
-                  className={`p-6 sm:p-7 rounded-3xl border transition-all shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] hover:shadow-xl hover:border-blue-400 ${
-                    task.completed
-                      ? 'border-emerald-300 bg-emerald-50/20'
-                      : 'border-slate-200/90 bg-white'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                    <div className="space-y-2.5 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
-                          {task.subject}
-                        </span>
-                        <Badge
-                          variant={
-                            task.type === 'weak_topic'
-                              ? 'weak'
-                              : task.type === 'learning'
-                              ? 'learning'
-                              : 'mastered'
-                          }
-                        >
-                          {task.type === 'weak_topic'
-                            ? '#1 Weakest Area'
-                            : task.type === 'learning'
-                            ? 'Reinforcement'
-                            : 'Revision'}
-                        </Badge>
-                        <span className="text-xs font-mono bg-slate-100 border border-slate-200 text-slate-700 px-3 py-0.5 rounded-lg font-bold">
-                          Mastery: {task.masteryScore}%
-                        </span>
-                        {task.completed && (
-                          <span className="text-xs font-extrabold bg-emerald-600 text-white px-3 py-0.5 rounded-full inline-flex items-center gap-1.5 shadow-xs">
-                            <CheckIcon size={12} />
-                            <span>Completed</span>
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="text-lg sm:text-xl font-black text-navy">{task.topic}</h3>
-                      <p className="text-sm text-slate-600 leading-relaxed font-normal">{task.task}</p>
-
-                      <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200/70 text-xs text-blue-950 font-medium">
-                        🎯 <strong>AI Rationale:</strong> {task.why}
-                      </div>
-                    </div>
-
-                    {/* Action and Duration Column */}
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-shrink-0">
-                      <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-xl shadow-xs">
-                        <ClockIcon size={14} className="text-slate-500" />
-                        <span>{task.minutes} min</span>
-                      </div>
-
-                      <motion.button
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.96 }}
-                        type="button"
-                        onClick={() => openStudySession(idx)}
-                        className={`px-6 py-3 rounded-2xl text-xs font-bold transition flex items-center gap-2 shadow-md cursor-pointer ${
-                          task.completed
-                            ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                            : 'bg-blue text-white hover:bg-blue/90 shadow-blue/25'
-                        }`}
-                      >
-                        {task.completed ? <RefreshCwIcon size={13} /> : <PlayIcon size={13} />}
-                        <span>{task.completed ? 'Review Session' : 'Start Study Session →'}</span>
-                      </motion.button>
-                    </div>
-                  </div>
-                </SpotlightCard>
-              </BlurFade>
-            ))}
-          </div>
-
-          {/* Proof of Work Prompt */}
-          <BlurFade delay={0.35}>
-            <div className="p-6 rounded-3xl bg-orange-50/80 border border-orange-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs shadow-xs">
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-2xl bg-orange/15 flex items-center justify-center text-orange flex-shrink-0">
-                  <FlameIcon size={20} className="text-orange" />
-                </div>
-                <div className="text-navy text-sm font-medium">
-                  <strong className="font-extrabold text-navy">Finished your study block?</strong> Submit a 20-second notebook photo to bump your streak and update your squad feed.
-                </div>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => navigate('/proof')}
-                className="px-5 py-3 rounded-2xl bg-orange text-white font-extrabold flex-shrink-0 hover:bg-orange/90 transition shadow-md shadow-orange/20 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-              >
-                <span>Submit Proof of Work</span>
-                <ArrowRightIcon size={13} />
-              </motion.button>
-            </div>
-          </BlurFade>
-        </div>
-
-        {/* COMPANION SIDEBAR: Allocation, Strategy & Diagnostic (4 cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Card 1: Today's Study Allocation */}
-          <BlurFade delay={0.15}>
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] p-6 sm:p-7 space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="font-extrabold text-base text-navy tracking-tight">Today's Time Budget</h3>
-                <span className="text-xs font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
-                  {totalMinutes} min total
-                </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-bold">
-                  <span className="text-slate-600">Completion Progress</span>
-                  <span className="text-blue font-mono">{completedTasksCount} of {tasks.length} tasks ({completionPct}%)</span>
-                </div>
-                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${completionPct}%` }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="h-full bg-gradient-to-r from-blue to-emerald-500 rounded-full"
+          ) : (
+            <>
+              <ul className="divide-y divide-line">
+                {tasks.map((task, i) => (
+                  <TaskRow
+                    key={`${task.topic}-${i}`}
+                    task={task}
+                    index={i}
+                    isNext={i === nextIndex}
+                    mastery={scoreByTopic.get(task.topic) ?? task.mastery_at_plan}
+                    showWhy
                   />
-                </div>
-              </div>
+                ))}
+              </ul>
+              <div className="mt-3 pt-3 border-t border-line">{plan.data && <SourceLabel source={plan.data.source} />}</div>
+            </>
+          )}
+        </Panel>
 
-              {/* Subject Breakdown Bars */}
-              <div className="space-y-3 pt-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                  Subject Time Distribution
-                </span>
-                {tasks.map((task, i) => {
-                  const pct = totalMinutes > 0 ? Math.round((task.minutes / totalMinutes) * 100) : 25;
-                  const colors = [
-                    'bg-blue',
-                    'bg-amber-500',
-                    'bg-emerald-500',
-                    'bg-purple-500',
-                  ];
-                  return (
-                    <div key={i} className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="font-semibold text-slate-700 truncate max-w-[170px]">{task.subject}</span>
-                        <span className="font-mono text-slate-500 font-bold">{task.minutes}m ({pct}%)</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${colors[i % colors.length]} rounded-full`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+        <div className="flex flex-col gap-8">
+          <Panel title={t('Time today')}>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <span className="text-[1.75rem] leading-tight font-bold">{t('{n} min', { n: doneMinutes })}</span>
+              <span className="text-print-dark font-medium">{t('of {n} planned', { n: totalMinutes })}</span>
+            </div>
+            <div
+              className="h-2 rounded-full bg-tint overflow-hidden"
+              role="progressbar"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={t('Time today')}
+            >
+              <div className="h-full bg-ink transition-[width] duration-200" style={{ width: `${pct}%` }} />
+            </div>
+          </Panel>
+
+          <Panel title={t('Queued for tomorrow')}>
+            {queue.error && !queue.data ? (
+              <ErrorState error={queue.error} onRetry={queue.refetch} />
+            ) : queue.isLoading ? (
+              <Skeleton className="h-12" />
+            ) : (queue.data ?? []).length === 0 ? (
+              <p className="text-ink-soft">
+                {t('Remedial tasks from quizzes and your documents wait here until tomorrow.')}
+              </p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {(queue.data ?? []).map((item) => (
+                  <li key={item.id} className="flex items-start gap-2 py-2 first:pt-0 last:pb-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-snug">{item.task.task}</p>
+                      <p className="text-sm text-ink-soft">{t('{n} min', { n: item.task.minutes })}</p>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </BlurFade>
+                    <button
+                      type="button"
+                      onClick={() => removeQueued(item.id)}
+                      aria-label={t('Remove from tomorrow')}
+                      className="flex-none w-9 h-9 inline-flex items-center justify-center rounded-sheet text-print-dark hover:bg-tint"
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
 
-          {/* Card 2: AI Execution Strategy */}
-          <BlurFade delay={0.2}>
-            <div className="bg-[#0B1F3A] text-white rounded-3xl border border-blue-900/40 shadow-xl shadow-navy/15 p-6 sm:p-7 space-y-4">
-              <div className="flex items-center gap-2 text-sky">
-                <SparklesIcon size={18} />
-                <span className="text-xs font-black uppercase tracking-wider">Cognitive Load Sequencing</span>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Your highest-effort topic (<strong className="text-white">Quantitative Aptitude</strong>) is scheduled first while executive cognitive stamina is fresh. English reading comprehension is positioned later to balance mental fatigue.
-              </p>
-              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
-                <span>Spaced Retention Active</span>
-                <span className="font-bold text-sky font-mono">Day 3 of 7</span>
-              </div>
-            </div>
-          </BlurFade>
-
-          {/* Card 3: Quick Diagnostic Assessment */}
-          <BlurFade delay={0.25}>
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] p-6 sm:p-7 space-y-3.5">
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-xl bg-blue/10 flex items-center justify-center text-blue font-bold">
-                  🎯
-                </span>
-                <div>
-                  <h4 className="font-extrabold text-sm text-navy">Assess Retention</h4>
-                  <span className="text-[11px] text-slate-400">5-Question Diagnostic</span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Finished studying Relative Speed? Test formula mastery in under 5 minutes to adapt tomorrow's queue.
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate('/quiz')}
-                className="w-full py-2.5 rounded-xl bg-blue hover:bg-blue-600 text-white font-bold text-xs transition shadow-xs cursor-pointer flex items-center justify-center gap-2"
-              >
-                <span>Launch Diagnostic Quiz</span>
-                <ArrowRightIcon size={13} />
-              </button>
-            </div>
-          </BlurFade>
+          <Panel title={t('Finished for the day?')} tint>
+            <p className="mb-2">{t('Submit proof to keep your streak')}</p>
+            <Link to="/proof" className="font-semibold text-print-dark">
+              {t('Go to Proof')}
+            </Link>
+          </Panel>
         </div>
       </div>
 
-      {/* Study Session Modal with AnimatePresence */}
-      <AnimatePresence>
-        {activeTask && (
-          <div className="fixed inset-0 bg-navy/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 12 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white rounded-3xl max-w-lg w-full p-7 sm:p-8 shadow-2xl border border-slate-200 relative"
-            >
-              <button
-                onClick={closeStudySession}
-                className="absolute top-5 right-5 text-slate-400 hover:text-navy text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 transition cursor-pointer"
-              >
-                ✕
-              </button>
-
-              <div className="text-center mb-6">
-                <Badge variant="primary">Active Study Session</Badge>
-                <h2 className="text-2xl font-black text-navy tracking-tight mt-2">{activeTask.topic}</h2>
-                <p className="text-xs text-slate-600 mt-1.5 max-w-sm mx-auto">{activeTask.task}</p>
-              </div>
-
-              {/* Countdown Timer */}
-              <div className="my-6 p-7 rounded-3xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center justify-center">
-                <div className="font-mono text-5xl sm:text-6xl font-black text-navy tracking-tight">
-                  {formatTimer(secondsRemaining)}
-                </div>
-                <p className="text-xs text-slate-500 mt-2 font-medium">
-                  Target: {activeTask.minutes} minutes · Maintain focus
-                </p>
-
-                {/* Timer Controls */}
-                <div className="flex items-center gap-3 mt-5">
-                  <motion.button
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.96 }}
-                    type="button"
-                    onClick={() => setIsTimerRunning(!isTimerRunning)}
-                    className="px-5 py-2.5 rounded-2xl bg-navy text-white text-xs font-bold hover:bg-navy/90 flex items-center gap-2 cursor-pointer shadow-md shadow-navy/20"
-                  >
-                    {isTimerRunning ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
-                    <span>{isTimerRunning ? 'Pause' : 'Resume'}</span>
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.96 }}
-                    type="button"
-                    onClick={() => setSecondsRemaining(activeTask.minutes * 60)}
-                    className="px-4 py-2.5 rounded-2xl border border-slate-300 text-slate-600 hover:text-navy text-xs font-bold cursor-pointer"
-                  >
-                    Reset
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Session Notes field */}
-              <div className="mb-6">
-                <label className="block text-xs font-bold text-navy uppercase tracking-wider mb-2">
-                  Session Notes & Solved Problems
-                </label>
-                <textarea
-                  value={sessionNotes}
-                  onChange={(e) => setSessionNotes(e.target.value)}
-                  placeholder="Log question numbers solved, shortcut formulas used, or friction points..."
-                  rows={3}
-                  className="w-full p-4 rounded-2xl border border-slate-300 text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue resize-none"
-                />
-              </div>
-
-              {completedSuccessMsg && (
-                <motion.div
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-bold text-center"
-                >
-                  {completedSuccessMsg}
-                </motion.div>
-              )}
-
-              {/* Done Button */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={closeStudySession}
-                  className="flex-1 py-3 rounded-2xl border border-slate-300 text-xs font-bold text-slate-600 hover:text-navy cursor-pointer"
-                >
-                  Save & Exit Later
-                </button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                  onClick={handleCompleteTask}
-                  className="flex-1 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/25 transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <CheckIcon size={14} />
-                  <span>Mark Task Done</span>
-                </motion.button>
-              </div>
-            </motion.div>
-          </div>
+      <Dialog open={Boolean(activeTask)} onClose={closeSession} title={activeTask?.topic ?? ''} wide>
+        {activeTask && activeIndex !== null && (
+          <StudySession key={activeIndex} task={activeTask} index={activeIndex} onClose={closeSession} onDone={closeSession} />
         )}
-      </AnimatePresence>
+      </Dialog>
     </div>
   );
 }

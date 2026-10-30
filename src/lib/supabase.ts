@@ -1,15 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
-  import.meta.env.SUPABASE_URL ||
-  'https://erlubucdmvntadedemqh.supabase.co';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  import.meta.env.SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVybHVidWNkbXZudGFkZWRlbXFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyOTk0MjcsImV4cCI6MjEwODg3NTQyN30.NMoKTZUMbTXfT1sgst4NHCpcdBSI_puICBJduWaHEcY';
+export const isConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// createClient throws on an empty URL, so fall back to a placeholder and let
+// App render a clear configuration screen when isConfigured is false.
+export const supabase = createClient(
+  supabaseUrl || 'https://not-configured.supabase.co',
+  supabaseAnonKey || 'not-configured'
+);

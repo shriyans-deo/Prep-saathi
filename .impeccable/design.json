@@ -1,0 +1,509 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T20:01:16.103Z",
+  "title": "Design System: PrepSaathi",
+  "extensions": {
+    "colorMeta": {
+      "print": {
+        "role": "primary",
+        "displayName": "Drop-out Rose",
+        "canonical": "#c4264a",
+        "tonalRamp": [
+          "#200004",
+          "#4c0014",
+          "#7f0027",
+          "#b40c3d",
+          "#dc415d",
+          "#ff6f82",
+          "#ffb1b6",
+          "#fee8e9"
+        ]
+      },
+      "print-dark": {
+        "role": "primary",
+        "displayName": "Deep Rose",
+        "canonical": "#a81d3d",
+        "tonalRamp": [
+          "#200004",
+          "#4c0014",
+          "#7f0027",
+          "#ad2341",
+          "#d54b61",
+          "#fe7082",
+          "#feb1b6",
+          "#ffe8e9"
+        ]
+      },
+      "tint": {
+        "role": "primary",
+        "displayName": "Pale Rose",
+        "canonical": "#fbe9ee",
+        "tonalRamp": [
+          "#12080b",
+          "#2e2125",
+          "#4c3e42",
+          "#6c5d61",
+          "#8d7d82",
+          "#b1a0a5",
+          "#d5c4c9",
+          "#fbe9ee"
+        ]
+      },
+      "line": {
+        "role": "primary",
+        "displayName": "Hairline Rose",
+        "canonical": "#f0c4d0",
+        "tonalRamp": [
+          "#1b020a",
+          "#391924",
+          "#593641",
+          "#7a5560",
+          "#9d7681",
+          "#c298a4",
+          "#e7bcc8",
+          "#ffe8ee"
+        ]
+      },
+      "ink": {
+        "role": "secondary",
+        "displayName": "Ballpoint Black",
+        "canonical": "#14141a",
+        "tonalRamp": [
+          "#0b0a10",
+          "#24242b",
+          "#414148",
+          "#606068",
+          "#818189",
+          "#a4a4ac",
+          "#c8c8d1",
+          "#ededf6"
+        ]
+      },
+      "ink-hover": {
+        "role": "secondary",
+        "displayName": "Black Hover",
+        "canonical": "#2c2c36",
+        "tonalRamp": [
+          "#0a0a12",
+          "#24242e",
+          "#41414b",
+          "#60606b",
+          "#81818d",
+          "#a3a4b0",
+          "#c8c8d5",
+          "#ededfb"
+        ]
+      },
+      "ink-disabled": {
+        "role": "secondary",
+        "displayName": "Black Disabled",
+        "canonical": "#8d8a92",
+        "tonalRamp": [
+          "#0c0a0f",
+          "#26242a",
+          "#434047",
+          "#626067",
+          "#848189",
+          "#a6a3ac",
+          "#cac7d0",
+          "#f0edf5"
+        ]
+      },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "Sheet White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#55505a",
+        "tonalRamp": [
+          "#0d0911",
+          "#27232c",
+          "#444049",
+          "#645f69",
+          "#85808b",
+          "#a8a2ae",
+          "#ccc6d2",
+          "#f2ecf8"
+        ]
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field Border",
+        "canonical": "#b9a8ae",
+        "tonalRamp": [
+          "#12070c",
+          "#2e2126",
+          "#4c3d43",
+          "#6c5c62",
+          "#8d7d83",
+          "#b1a0a6",
+          "#d5c4ca",
+          "#fbe9ef"
+        ]
+      },
+      "placeholder": {
+        "role": "neutral",
+        "displayName": "Placeholder",
+        "canonical": "#6d6872",
+        "tonalRamp": [
+          "#0d0911",
+          "#27232b",
+          "#444049",
+          "#645f69",
+          "#85808a",
+          "#a8a2ad",
+          "#ccc6d2",
+          "#f1ecf7"
+        ]
+      },
+      "chart-grid": {
+        "role": "neutral",
+        "displayName": "Chart Grid",
+        "canonical": "#f7e3e9",
+        "tonalRamp": [
+          "#13070b",
+          "#2f2025",
+          "#4d3d42",
+          "#6d5c61",
+          "#8f7d82",
+          "#b29fa5",
+          "#d7c3c9",
+          "#fde8ee"
+        ]
+      },
+      "warn-bg": {
+        "role": "semantic",
+        "displayName": "Warn Wash",
+        "canonical": "#fdf3dc",
+        "tonalRamp": [
+          "#110a00",
+          "#2c2412",
+          "#49412e",
+          "#69604d",
+          "#8b826d",
+          "#aea48f",
+          "#d2c8b2",
+          "#f8eed7"
+        ]
+      },
+      "good-bg": {
+        "role": "semantic",
+        "displayName": "Good Wash",
+        "canonical": "#e6f4ec",
+        "tonalRamp": [
+          "#050e09",
+          "#1d2822",
+          "#3a453f",
+          "#59655e",
+          "#79867f",
+          "#9ca9a1",
+          "#bfcdc5",
+          "#e5f2eb"
+        ]
+      },
+      "error-bg": {
+        "role": "semantic",
+        "displayName": "Error Wash",
+        "canonical": "#fbe4e4",
+        "tonalRamp": [
+          "#140707",
+          "#302020",
+          "#4f3d3d",
+          "#6f5c5c",
+          "#917d7d",
+          "#b49f9f",
+          "#d9c3c3",
+          "#fee9e9"
+        ]
+      },
+      "error-text": {
+        "role": "semantic",
+        "displayName": "Error Text",
+        "canonical": "#7a1212",
+        "tonalRamp": [
+          "#210000",
+          "#4e0002",
+          "#7b1313",
+          "#a13a33",
+          "#c85d53",
+          "#ef8075",
+          "#ffb3aa",
+          "#fee9e6"
+        ]
+      },
+      "error-strong": {
+        "role": "semantic",
+        "displayName": "Error Strong",
+        "canonical": "#8e1414",
+        "tonalRamp": [
+          "#210000",
+          "#4e0002",
+          "#810108",
+          "#a8312b",
+          "#cf564c",
+          "#f77a6d",
+          "#ffb3a9",
+          "#fee9e6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The auth screen's single statement, and the study timer. 2.5rem on phones."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The one sentence that names the gap, and the quiz result. 1.75rem on phones."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Page titles and the large figures in stat blocks."
+      },
+      "question": {
+        "displayName": "Question",
+        "purpose": "The quiz question. 1.25rem on phones."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "Panel titles, in Deep Rose."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Everything else."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "Button text. 0.875rem on small buttons and segmented controls."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Stat labels, table headers, hints and metadata."
+      },
+      "tab": {
+        "displayName": "Tab",
+        "purpose": "Bottom tab labels only."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ink-in",
+        "value": "200ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The bubble fill: a clip-path wipe from circle(0% at 30% 40%) to circle(100% at 50% 50%)."
+      },
+      {
+        "name": "state-change",
+        "value": "150ms",
+        "purpose": "Colour transitions on buttons, nav items, segmented items and quiz options."
+      },
+      {
+        "name": "skeleton-pulse",
+        "value": "1.4s ease-in-out infinite",
+        "purpose": "Opacity pulse to 0.45 on pale rose skeletons."
+      },
+      {
+        "name": "spinner",
+        "value": "0.8s linear infinite",
+        "purpose": "Loading spinner rotation."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "The primary action, such as the next task's Start. Black because acting is the user's own mark.",
+      "html": "<button class=\"ds-btn-ink\">Start</button>",
+      "css": ".ds-btn-ink { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-sheet); font-family: var(--font-sans); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 150ms, border-color 150ms, color 150ms; background: var(--color-ink); color: #fff; border: none; } .ds-btn-ink:hover { background: #2c2c36; } .ds-btn-ink:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; } .ds-btn-ink:disabled { background: #8d8a92; cursor: not-allowed; }"
+    },
+    {
+      "name": "Print Button",
+      "kind": "button",
+      "refersTo": "button-print",
+      "description": "The secondary action, printed in rose with a 1px outline.",
+      "html": "<button class=\"ds-btn-print\">Regenerate plan</button>",
+      "css": ".ds-btn-print { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-sheet); font-family: var(--font-sans); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 150ms, border-color 150ms, color 150ms; background: var(--color-sheet); color: var(--color-print-dark); border: 1px solid var(--color-print); } .ds-btn-print:hover { background: var(--color-tint); } .ds-btn-print:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; } .ds-btn-print:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Cancel, Back and show-more toggles.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-sheet); font-family: var(--font-sans); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 150ms, border-color 150ms, color 150ms; background: transparent; color: var(--color-print-dark); border: none; } .ds-btn-ghost:hover { background: var(--color-tint); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; } .ds-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive actions. Neutral at rest, and red only on hover.",
+      "html": "<button class=\"ds-btn-danger\">Delete my account</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-sheet); font-family: var(--font-sans); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 150ms, border-color 150ms, color 150ms; background: var(--color-sheet); color: var(--color-ink); border: 1px solid var(--color-ink-soft); } .ds-btn-danger:hover { background: #fbe4e4; border-color: #a01818; color: #8e1414; } .ds-btn-danger:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; } .ds-btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Label above, hint below, a warm grey outline that turns rose on hover and black on focus.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Hours studied</span><input class=\"ds-input\" type=\"number\" value=\"1\" /><span class=\"ds-field-hint\">This is added to today.</span></label>",
+      "css": ".ds-field { display: block; font-family: var(--font-sans); color: var(--color-ink); } .ds-field-label { display: block; font-weight: 500; margin-bottom: 4px; } .ds-field-hint { display: block; font-size: 0.875rem; color: var(--color-ink-soft); margin-top: 4px; } .ds-input { display: block; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid #b9a8ae; border-radius: var(--radius-sheet); background: var(--color-sheet); color: inherit; font: inherit; caret-color: var(--color-print); } .ds-input:hover { border-color: var(--color-print); } .ds-input:focus-visible { border-color: var(--color-ink); outline: 2px solid var(--color-ink); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "chip",
+      "refersTo": "segmented-item",
+      "description": "A rose-outlined choice of two or three. The selected item is black because it is the user's mark.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Time range\"><button class=\"ds-seg-item\" aria-pressed=\"true\">7 days</button><button class=\"ds-seg-item\" aria-pressed=\"false\">30 days</button></div>",
+      "css": ".ds-seg { display: inline-flex; border: 1px solid var(--color-print); border-radius: var(--radius-sheet); overflow: hidden; font-family: var(--font-sans); } .ds-seg-item { min-height: 36px; padding: 0 12px; border: none; font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; background: var(--color-sheet); color: var(--color-print-dark); transition: background-color 150ms; } .ds-seg-item:hover { background: var(--color-tint); } .ds-seg-item[aria-pressed='true'] { background: var(--color-ink); color: #fff; } .ds-seg-item:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "rail",
+      "description": "The desktop rail. Rose, with a hollow circle per item and a filled black one on the active item.",
+      "html": "<nav class=\"ds-rail\" aria-label=\"Main\"><a class=\"ds-rail-item\" aria-current=\"page\" href=\"#\"><span class=\"ds-rail-mark\"></span>Dashboard</a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-mark\"></span>Today's Plan</a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-mark\"></span>Quiz</a></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; gap: 2px; width: 240px; padding: 16px; background: var(--color-print); font-family: var(--font-sans); } .ds-rail-item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: var(--radius-sheet); color: #fff; font-weight: 500; text-decoration: none; transition: background-color 150ms; } .ds-rail-item:hover { background: var(--color-print-dark); } .ds-rail-item:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; } .ds-rail-mark { flex: none; width: 16px; height: 16px; border: 1.5px solid #fff; border-radius: 50%; } .ds-rail-item[aria-current='page'] { background: var(--color-sheet); color: var(--color-print-dark); font-weight: 600; } .ds-rail-item[aria-current='page'] .ds-rail-mark { background: var(--color-ink); border-color: var(--color-ink); }"
+    },
+    {
+      "name": "Open Panel",
+      "kind": "card",
+      "refersTo": "panel-tint",
+      "description": "A section: a 1.5px rose rule and a rose title, with no box. The tinted variant is for closing prompts.",
+      "html": "<div class=\"ds-panels\"><section class=\"ds-panel\"><h2 class=\"ds-panel-title\">Time today</h2><p>42 min of 180 planned</p></section><section class=\"ds-panel-tint\"><h2 class=\"ds-panel-title\">Finished for the day?</h2><p>Submit proof to keep your streak</p></section></div>",
+      "css": ".ds-panels { display: grid; gap: 32px; font-family: var(--font-sans); color: var(--color-ink); } .ds-panels p { margin: 0; } .ds-panel { border-top: 1.5px solid var(--color-print); padding-top: 12px; } .ds-panel-tint { background: var(--color-tint); border-radius: var(--radius-sheet); padding: 16px; } .ds-panel-title { margin: 0 0 12px; font-size: 1.125rem; line-height: 1.375; font-weight: 600; color: var(--color-print-dark); }"
+    },
+    {
+      "name": "Bubble and 30-Day Record",
+      "kind": "custom",
+      "refersTo": "bubble",
+      "description": "The signature mark: empty, filled with a quick ink stroke, lettered, and as a proportional daily record.",
+      "html": "<div class=\"ds-bubbles\"><span class=\"ds-bubble\"></span><span class=\"ds-bubble\"><span class=\"ds-bubble-label\">A</span></span><span class=\"ds-bubble\" data-filled=\"true\"><span class=\"ds-bubble-ink\"></span></span><span class=\"ds-bubble\" data-filled=\"true\"><span class=\"ds-bubble-ink\"></span><span class=\"ds-bubble-label\">B</span></span><span class=\"ds-day\"><span class=\"ds-day-ink\" style=\"width:8px;height:8px\"></span></span><span class=\"ds-day\"><span class=\"ds-day-ink\" style=\"width:15px;height:15px\"></span></span><span class=\"ds-day\" data-full=\"true\"><span class=\"ds-day-ink\" style=\"width:25px;height:25px\"></span></span></div>",
+      "css": "@keyframes ds-ink-in { from { clip-path: circle(0% at 30% 40%); } to { clip-path: circle(100% at 50% 50%); } } .ds-bubbles { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-family: var(--font-sans); } .ds-bubble { position: relative; display: inline-flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: 14px; font-weight: 600; line-height: 1; border: 1.5px solid var(--color-print); border-radius: 50%; color: var(--color-print); background: var(--color-sheet); } .ds-bubble[data-filled='true'] { border-color: var(--color-ink); color: #fff; } .ds-bubble-ink { position: absolute; inset: -1.5px; border-radius: 50%; background: var(--color-ink); animation: ds-ink-in 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-bubble-label { position: relative; } .ds-day { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1.5px solid var(--color-print); border-radius: 50%; } .ds-day[data-full='true'] { border-color: var(--color-ink); } .ds-day-ink { display: block; border-radius: 50%; background: var(--color-ink); }"
+    },
+    {
+      "name": "Task Row",
+      "kind": "custom",
+      "refersTo": "bubble",
+      "description": "A task still to do is printed in rose. Doing it turns the row to black ink.",
+      "html": "<ul class=\"ds-tasks\"><li class=\"ds-task\" data-done=\"true\"><span class=\"ds-task-bubble\"></span><div class=\"ds-task-body\"><div class=\"ds-task-head\"><h3>Percentages</h3><span>30 min done</span></div><p>Solve 15 mixed problems</p></div></li><li class=\"ds-task\"><span class=\"ds-task-bubble\"></span><div class=\"ds-task-body\"><div class=\"ds-task-head\"><h3>Relative speed</h3><span>45 min</span></div><p>Revise circular track formulas</p><button class=\"ds-task-start\">Start</button></div></li></ul>",
+      "css": ".ds-tasks { list-style: none; margin: 0; padding: 0; font-family: var(--font-sans); } .ds-task { display: flex; gap: 12px; padding: 12px 0; color: var(--color-print-dark); border-top: 1px solid var(--color-line); } .ds-task:first-child { border-top: none; } .ds-task[data-done='true'] { color: var(--color-ink); } .ds-task-bubble { flex: none; width: 26px; height: 26px; margin-top: 2px; border: 1.5px solid var(--color-print); border-radius: 50%; background: var(--color-sheet); } .ds-task[data-done='true'] .ds-task-bubble { background: var(--color-ink); border-color: var(--color-ink); } .ds-task-body { flex: 1; min-width: 0; } .ds-task-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 12px; } .ds-task-head h3 { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.375; } .ds-task-head span { font-size: 0.875rem; font-weight: 500; white-space: nowrap; } .ds-task-body p { margin: 0; font-size: 0.875rem; line-height: 1.375; } .ds-task-start { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--radius-sheet); font-family: var(--font-sans); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 150ms, border-color 150ms, color 150ms; margin-top: 8px; background: var(--color-ink); color: #fff; border: none; } .ds-task-start:hover { background: #2c2c36; } .ds-task-start:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The OMR Answer Sheet",
+    "overview": "An OMR scanner ignores the coloured print and reads only black marks. PrepSaathi works the same way: the plan is printed in rose, and only what the aspirant actually did is black. Every screen is a white sheet with a question printed on it and a record being filled in, so the uncomfortable number (hours planned against hours done) is visible before anything else.\n\nDensity is that of a working form: open sections under a rose rule, rows divided by hairlines, one family of type, one mark. Nothing floats and nothing glows. The sheet is familiar to the people using it, because they fill sheets like this in exam halls, and it stays legible on a mid-range Android phone on a slow connection in both English and Hindi.\n\nThe system refuses the category's stat-card dashboard with soft shadows and an indigo accent. There is no dark mode in this version: the sheet is white, and a night theme is deferred.",
+    "keyCharacteristics": [
+      "Rose print is the plan and the structure; black ink is what the user did.",
+      "One signature mark, the bubble, carries task state, quiz answers, navigation state and the 30-day record.",
+      "One family, Hind, self-hosted, for Latin and Devanagari alike.",
+      "White sheet ground, no shadows, 4px corners, open sections under a 1.5px rose rule rather than closed cards.",
+      "Lite mode removes charts, proof images and animation, and the screens still work."
+    ],
+    "rules": [
+      {
+        "name": "The Drop-Out Rule",
+        "body": "Print is the plan and the structure; ink is what the user actually did. If a mark or a figure records something the user did, it is black. If it states what the sheet asks for, it is rose. Reading text and primary actions are the only other uses of black.",
+        "section": "colors"
+      },
+      {
+        "name": "The Meaning Only Rule",
+        "body": "Warn, good and error colours appear only on a state that is true right now. They are never decoration, section colour or category colour, and every notice also carries an icon so status never rests on colour alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Hind is the only family, for both scripts. Hierarchy comes from size and weight, never from a second face. Numerals in tables are tabular.",
+        "section": "typography"
+      },
+      {
+        "name": "The Plain Label Rule",
+        "body": "A heading stands on its own. No eyebrow or small label is stacked above it, no text is set in tracked capitals, and no text is filled with a gradient.",
+        "section": "typography"
+      },
+      {
+        "name": "The Next Action First Rule",
+        "body": "On phones the sentence comes first, then today's tasks, then the chart. Reorder the columns rather than shrinking them so the next thing to do is thumb-reachable.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "Nothing casts a shadow, at rest or on hover. Paper does not lift. State changes are colour changes.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Open Section Rule",
+        "body": "A section is a 1.5px rose rule across the top with a rose title beneath it, and no box. A closed shape is reserved for the pale rose tinted panel and for things the user must act inside, such as dialogs and quiz options.",
+        "section": "shapes"
+      },
+      {
+        "name": "The One Mark Rule",
+        "body": "If something can be marked, it is marked with a bubble. Checkboxes, toggles and radio buttons take this form over a visually hidden native input. Do not introduce a second completion mark.",
+        "section": "components"
+      },
+      {
+        "name": "The Dashed Plan Rule",
+        "body": "Planned is dashed rose and done is solid black, in every chart and every legend. The dataviz validator flags black as too low in lightness and chroma for a categorical slot. This is accepted on purpose, because it is the brand rule. Colour-vision and contrast checks pass, and dashed against solid is the secondary encoding.",
+        "section": "components"
+      },
+      {
+        "name": "The Lite Truth Rule",
+        "body": "Lite mode must keep the low-bandwidth claim true. Any new heavy surface needs a Lite version that shows the same numbers as text.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do draw every plan, label and structural rule in rose, and every user mark and user figure in black, per the Drop-Out Rule.",
+      "Do use #a81d3d, not #c4264a, for small printed text.",
+      "Do start a section with a 1.5px rose rule and a rose title, with no box around it.",
+      "Do use the bubble for anything the user marks, over a real, visually hidden input.",
+      "Do keep one black primary action per task list: the next task's Start button.",
+      "Do pair every chart with its table and every coloured status with an icon or text.",
+      "Do teach the next action in empty states, and show only measured or clearly labelled sample numbers.",
+      "Do check every new screen in Hindi and in Lite mode."
+    ],
+    "donts": [
+      "Don't use the word \"verification\" for proofs. A proof is an honesty nudge, and the copy says \"proof\", \"counted\" or \"check-in\".",
+      "Don't place an eyebrow or small label above a heading.",
+      "Don't use gradient text.",
+      "Don't add shadows, at rest or on hover.",
+      "Don't build the category's stat-card dashboard: closed cards, soft shadows and an indigo accent.",
+      "Don't draw a planned or printed value in black, or a completed mark in rose.",
+      "Don't use warn, good or error colours for anything other than their state.",
+      "Don't add a second typeface, or load Hind from a font service.",
+      "Don't add dark mode styling yet. A night theme is deferred."
+    ]
+  }
+}

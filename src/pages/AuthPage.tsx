@@ -1,268 +1,232 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { CheckIcon, SparklesIcon, ArrowRightIcon } from '../components/ui/Icons';
-import { Badge } from '../components/ui/Badge';
-import { Spotlight } from '../components/aceternity/Spotlight';
-import { BackgroundDots } from '../components/aceternity/BackgroundDots';
-import { ShimmerButton } from '../components/magicui/ShimmerButton';
-import { BlurFade } from '../components/magicui/BlurFade';
-import { DecryptedText } from '../components/reactbits/DecryptedText';
-import { motion } from 'motion/react';
+import { usePrefs } from '../lib/prefs';
+import { supabase } from '../lib/supabase';
+import { Bubble, Button, Field, Notice, Segmented, inputClass } from '../components/ui';
+
+type Mode = 'login' | 'signup' | 'forgot' | 'recovery';
+
+const LOOP = ['Plan', 'Study', 'Quiz', 'Proof', 'Tomorrow changes'];
+
+function authMessage(message: string, t: (s: string) => string): string {
+  const m = message.toLowerCase();
+  if (m.includes('invalid login')) return t('That email and password do not match. Try again or reset your password.');
+  if (m.includes('already registered')) return t('This email already has an account. Log in instead.');
+  if (m.includes('password should')) return t('Use a password of at least 6 characters.');
+  if (m.includes('rate limit')) return t('Too many attempts. Please wait a few minutes and try again.');
+  if (m.includes('fetch') || m.includes('network')) return t('Could not reach the server. Check your connection and try again.');
+  return t('Something went wrong. Please try again.');
+}
 
 export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { user, isLoading, signIn, signUp, sendPasswordReset, startSampleAccount } = useAuth();
+  const { t, lang, setLang } = usePrefs();
+  const [params] = useSearchParams();
+
+  const [mode, setMode] = useState<Mode>(params.get('mode') === 'signup' ? 'signup' : 'login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [sampleBusy, setSampleBusy] = useState(false);
 
-  const { signIn, signUp, loginAsDemo } = useAuth();
-  const navigate = useNavigate();
+  useEffect(() => {
+    if (window.location.hash.includes('type=recovery')) setMode('recovery');
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setMode('recovery');
+    });
+    return () => data.subscription.unsubscribe();
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  if (!isLoading && user && mode !== 'recovery' && !sampleBusy) return <Navigate to="/dashboard" replace />;
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setLoading(true);
-
-    if (isSignUp) {
-      if (!name.trim()) {
-        setErrorMsg('Please enter your full name');
-        setLoading(false);
-        return;
-      }
-      const { error } = await signUp(email, password, name);
-      if (error) {
-        setErrorMsg(error.message);
-        setLoading(false);
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      if (mode === 'login') {
+        const { error: err } = await signIn(email.trim(), password);
+        if (err) setError(authMessage(err.message, t));
+      } else if (mode === 'signup') {
+        if (!name.trim()) {
+          setError(t('Please enter your name.'));
+          return;
+        }
+        const { error: err, needsConfirmation } = await signUp(email.trim(), password, name.trim());
+        if (err) setError(authMessage(err.message, t));
+        else if (needsConfirmation) setInfo(t('Check your email for a link to confirm your account.'));
+      } else if (mode === 'forgot') {
+        const { error: err } = await sendPasswordReset(email.trim());
+        if (err) setError(authMessage(err.message, t));
+        else setInfo(t('If that email has an account, a reset link is on its way.'));
       } else {
-        navigate('/onboarding');
+        const { error: err } = await supabase.auth.updateUser({ password });
+        if (err) setError(authMessage(err.message, t));
+        else {
+          window.history.replaceState(null, '', '/auth');
+          setMode('login');
+        }
       }
-    } else {
-      const { error } = await signIn(email, password);
-      if (error) {
-        setErrorMsg(error.message);
-        setLoading(false);
-      } else {
-        navigate('/dashboard');
-      }
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleDemoLogin = () => {
-    loginAsDemo();
-    navigate('/dashboard');
+  const openSample = async () => {
+    setError(null);
+    setSampleBusy(true);
+    const { error: err } = await startSampleAccount();
+    setSampleBusy(false);
+    if (err) setError(t('Could not open the sample account. Please try again.'));
+  };
+
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setError(null);
+    setInfo(null);
+  };
+
+  const heading: Record<Mode, string> = {
+    login: t('Log in'),
+    signup: t('Create your account'),
+    forgot: t('Reset your password'),
+    recovery: t('Choose a new password'),
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-bg">
-      {/* Left panel with Aceternity Spotlight and BackgroundDots */}
-      <BackgroundDots variant="dark" className="w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex flex-col justify-between relative border-b md:border-b-0 md:border-r border-navy/40">
-        <Spotlight className="-top-40 left-0 md:left-20 md:-top-20" fill="#2563EB" />
+    <div className="min-h-dvh grid lg:grid-cols-[1.1fr_1fr]">
+      <section className="bg-print text-white px-6 py-8 sm:px-10 lg:px-14 lg:py-12 flex flex-col">
+        <div className="text-2xl font-bold">PrepSaathi</div>
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2.5 mb-10">
-            <span className="w-9 h-9 rounded-xl bg-blue flex items-center justify-center font-bold text-base text-white shadow-xs">
-              PS
-            </span>
-            <span className="text-2xl font-extrabold tracking-tight text-white">PrepSaathi</span>
-            <Badge variant="primary" className="ml-2 bg-blue/20 text-sky border-blue/30">
-              Execution Partner
-            </Badge>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4 tracking-tight">
-            <DecryptedText
-              text="The Execution Engine for Indian Government Exams"
-              speed={28}
-              className="text-white"
-            />
+        <div className="lg:my-auto mt-8">
+          <h1 className="text-[2.5rem] sm:text-[3.5rem] leading-[1.15] font-bold max-w-[14ch] [text-wrap:balance]">
+            {t('Only black marks count.')}
           </h1>
-          <p className="text-slate-300 text-sm sm:text-base mb-8 leading-relaxed font-normal">
-            Content is solved. YouTube is free. The binding constraint is execution.
-            PrepSaathi makes your execution gap visible daily and adapts tomorrow's plan based on what you actually did today.
+          <p className="mt-4 text-lg leading-relaxed max-w-[46ch]">
+            {t('An OMR scanner ignores the printed sheet and reads only what you mark. Your preparation works the same way. PrepSaathi measures the gap between the hours you plan and the hours you do, and rewrites tomorrow from it.')}
           </p>
 
-          {/* The Daily Loop Framing Card */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8 space-y-1 backdrop-blur-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-sky block">The Daily Closed Loop</span>
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
-              Plan → Study → Log Execution → Diagnostic Quiz → Mastery Update → Proof Submission → Tomorrow's Plan Changes.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <span className="w-5 h-5 rounded-full bg-blue/20 text-sky flex items-center justify-center flex-shrink-0 mt-0.5">
-                <CheckIcon size={12} />
-              </span>
-              <p className="text-xs sm:text-sm text-slate-300">
-                <strong className="text-white">Execution Gap Tracking:</strong> Measure planned vs executed hours daily, not just test scores.
-              </p>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <span className="w-5 h-5 rounded-full bg-blue/20 text-sky flex items-center justify-center flex-shrink-0 mt-0.5">
-                <CheckIcon size={12} />
-              </span>
-              <p className="text-xs sm:text-sm text-slate-300">
-                <strong className="text-white">Grounded AI Planning:</strong> Daily plans built from your weakest mastery scores, adjusting down if yesterday fell below 60%.
-              </p>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <span className="w-5 h-5 rounded-full bg-blue/20 text-sky flex items-center justify-center flex-shrink-0 mt-0.5">
-                <CheckIcon size={12} />
-              </span>
-              <p className="text-xs sm:text-sm text-slate-300">
-                <strong className="text-white">Own-Notes Ingestion:</strong> Upload your coaching PDFs to detect syllabus overlaps and generate targeted quizzes.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 mt-12 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-mono">
-          <span>SSC CGL · UPSC CSE · IBPS PO</span>
-          <span>Tier 2–3 First</span>
-        </div>
-      </BackgroundDots>
-
-      {/* Right panel: Auth Form */}
-      <div className="w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex items-center justify-center">
-        <BlurFade delay={0.1} className="w-full max-w-md space-y-6">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
-              {isSignUp ? 'Create your aspirant account' : 'Welcome back'}
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              {isSignUp
-                ? 'Join serious aspirants closing their daily execution gap.'
-                : 'Enter your credentials to access your daily plan and squad.'}
-            </p>
-          </div>
-
-          {errorMsg && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2"
-            >
-              <strong className="font-bold">Error:</strong>
-              <span>{errorMsg}</span>
-            </motion.div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div>
-                <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Priya Sharma"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
-                  required={isSignUp}
+          <ol className="mt-7 hidden sm:flex flex-col gap-2.5">
+            {LOOP.map((step, i) => (
+              <li key={step} className="flex items-center gap-3 font-medium">
+                <span
+                  className={`w-6 h-6 rounded-full border-[1.5px] flex-none ${i < 2 ? 'bg-ink border-ink' : 'border-white'}`}
+                  aria-hidden="true"
                 />
-              </div>
+                {t(step)}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <p className="mt-8 text-sm text-[#ffe3ea]">
+          {t('For SSC, IBPS, UPSC and RRB aspirants.')}
+        </p>
+      </section>
+
+      <section className="px-6 py-8 sm:px-10 flex flex-col">
+        <div className="flex justify-end">
+          <Segmented
+            label={t('Language')}
+            value={lang}
+            onChange={setLang}
+            options={[
+              { value: 'en', label: 'English' },
+              { value: 'hi', label: 'हिन्दी' },
+            ]}
+          />
+        </div>
+
+        <div className="w-full max-w-sm mx-auto my-auto py-8">
+          <h2 className="text-[1.75rem] leading-tight font-bold mb-5">{heading[mode]}</h2>
+
+          {error && <Notice tone="error" className="mb-4">{error}</Notice>}
+          {info && <Notice tone="good" className="mb-4">{info}</Notice>}
+
+          <form onSubmit={submit} className="flex flex-col gap-4">
+            {mode === 'signup' && (
+              <Field label={t('Your name')}>
+                <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
+              </Field>
+            )}
+            {mode !== 'recovery' && (
+              <Field label={t('Email')}>
+                <input className={inputClass} type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+              </Field>
+            )}
+            {mode !== 'forgot' && (
+              <Field label={t('Password')} hint={mode === 'login' ? undefined : t('At least 6 characters')}>
+                <span className="relative block">
+                  <input
+                    className={`${inputClass} pr-11`}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    minLength={6}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? t('Hide password') : t('Show password')}
+                    className="absolute right-1 top-1 w-9 h-9 inline-flex items-center justify-center text-print-dark rounded-sheet hover:bg-tint"
+                  >
+                    {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                  </button>
+                </span>
+              </Field>
             )}
 
-            <div>
-              <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="aspirant@example.com"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-blue text-sm"
-                required
-                minLength={6}
-              />
-            </div>
-
-            <ShimmerButton
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 px-4 text-xs sm:text-sm font-bold disabled:opacity-50 mt-2"
-            >
-              {loading
-                ? 'Processing...'
-                : isSignUp
-                ? 'Sign Up & Start Onboarding'
-                : 'Log In to PrepSaathi'}
-            </ShimmerButton>
+            <Button type="submit" loading={busy} className="w-full mt-1">
+              {mode === 'login' && t('Log in')}
+              {mode === 'signup' && t('Create account')}
+              {mode === 'forgot' && t('Send reset link')}
+              {mode === 'recovery' && t('Save new password')}
+            </Button>
           </form>
 
-          <div className="flex items-center justify-between text-xs sm:text-sm pt-2">
-            <span className="text-slate-500">
-              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrorMsg(null);
-              }}
-              className="text-blue font-bold hover:underline cursor-pointer"
-            >
-              {isSignUp ? 'Log In' : 'Sign Up'}
-            </button>
+          <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm">
+            {mode === 'login' ? (
+              <>
+                <button type="button" className="font-semibold text-print-dark underline" onClick={() => switchMode('signup')}>
+                  {t('Create an account')}
+                </button>
+                <button type="button" className="text-ink-soft underline" onClick={() => switchMode('forgot')}>
+                  {t('Forgot password?')}
+                </button>
+              </>
+            ) : (
+              mode !== 'recovery' && (
+                <button type="button" className="font-semibold text-print-dark underline" onClick={() => switchMode('login')}>
+                  {t('Back to log in')}
+                </button>
+              )
+            )}
           </div>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
+          {(mode === 'login' || mode === 'signup') && (
+            <div className="mt-7 pt-5 border-t border-line">
+              <div className="flex items-start gap-2.5 mb-3">
+                <Bubble size={20} className="mt-0.5" />
+                <p className="text-sm text-ink-soft">
+                  {t('Want a look first? Open a private account filled with made-up sample data. It is labelled on every screen and deleted after 2 days.')}
+                </p>
+              </div>
+              <Button variant="print" className="w-full" loading={sampleBusy} onClick={openSample}>
+                {t('Explore with sample data')}
+              </Button>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-bg px-3 text-slate-400 font-semibold tracking-wider">
-                Live Demonstration Mode
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Demo Launch Button */}
-          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs text-center space-y-2.5">
-            <div className="flex items-center justify-center gap-2">
-              <SparklesIcon size={15} className="text-blue" />
-              <span className="text-xs font-bold text-navy">
-                Walkthrough with Pre-Seeded Account
-              </span>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={handleDemoLogin}
-              className="w-full py-3 px-4 rounded-xl bg-navy hover:bg-navy/90 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>Launch Demo Account (Priya Sharma · 12d streak)</span>
-              <ArrowRightIcon size={12} />
-            </motion.button>
-            <p className="text-[11px] text-slate-400">
-              Pre-seeded with 30 days of narrowing execution gap, 12 mastery topics, and 4 quizzes.
-            </p>
-          </div>
-        </BlurFade>
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

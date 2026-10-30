@@ -1,9 +1,9 @@
-// Database types matching the PrepSaathi schema (§3 of spec)
+// Row types for the PrepSaathi schema. See supabase/migrations for the source of truth.
 
 export interface Profile {
   id: string;
   name: string;
-  exam: string;
+  exam: string | null;
   attempt_number: number;
   city_tier: string | null;
   daily_target_hrs: number;
@@ -11,6 +11,8 @@ export interface Profile {
   total_points: number;
   squad_id: string | null;
   language_pref: 'en' | 'hi';
+  last_proof_date: string | null;
+  is_demo: boolean;
   created_at: string;
 }
 
@@ -19,7 +21,7 @@ export interface Squad {
   name: string;
   exam: string;
   member_count: number;
-  created_at: string;
+  is_demo: boolean;
 }
 
 export interface Topic {
@@ -30,29 +32,30 @@ export interface Topic {
   difficulty: string;
 }
 
-export interface Mastery {
-  id: string;
-  user_id: string;
-  topic_id: string;
+export type MasteryStatus = 'weak' | 'learning' | 'mastered';
+
+export interface MasteryRow {
   score: number;
-  status: 'weak' | 'learning' | 'mastered';
+  status: MasteryStatus;
   attempts: number;
   last_tested_at: string | null;
-  updated_at: string;
+  topic_id: string;
+  topics: { id: string; subject: string; topic_name: string };
 }
 
-export interface MasteryWithTopic extends Mastery {
-  topics: Topic;
-}
+export type TaskType = 'weak_topic' | 'learning' | 'revision' | 'retest' | 'remedial';
 
-export interface DailyPlanTask {
+export interface PlanTask {
   subject: string;
   topic: string;
   task: string;
   minutes: number;
-  type: 'weak_topic' | 'learning' | 'revision';
+  type: TaskType;
   why: string;
+  mastery_at_plan?: number | null;
   completed?: boolean;
+  minutes_spent?: number;
+  completed_at?: string;
 }
 
 export interface DailyPlan {
@@ -60,33 +63,31 @@ export interface DailyPlan {
   user_id: string;
   plan_date: string;
   tasks: {
-    tasks: DailyPlanTask[];
+    tasks: PlanTask[];
     total_minutes: number;
     focus_note: string;
+    adaptation_note?: string | null;
+    regenerated?: boolean;
   };
   generated_by_ai: boolean;
+  source: 'ai' | 'rules' | 'sample';
   completed_count: number;
-  created_at: string;
 }
 
 export interface StudyLog {
-  id: string;
-  user_id: string;
   log_date: string;
   planned_hrs: number;
   actual_hrs: number;
-  topics_covered: string[] | null;
-  created_at: string;
 }
 
 export interface Proof {
   id: string;
-  user_id: string;
   proof_date: string;
   proof_type: 'photo' | 'voice' | 'text';
   content_url: string | null;
   content_text: string | null;
   ai_verdict: string | null;
+  duration_seconds: number | null;
   created_at: string;
 }
 
@@ -97,126 +98,93 @@ export interface QuizQuestion {
   concept: string;
 }
 
-export interface Quiz {
-  id: string;
-  user_id: string;
-  topic_id: string | null;
-  source_document_id: string | null;
-  questions: QuizQuestion[];
-  user_answers: string[] | null;
-  score: number | null;
-  ai_feedback: string | null;
-  created_at: string;
+export interface QuizFeedback {
+  score: number;
+  total: number;
+  score_pct?: number;
+  concept_gap: string | null;
+  feedback: string;
+  mastery_delta: number;
+  remedial_task: { task: string; minutes: number } | null;
+  retest_in_days?: number;
+  source: 'ai' | 'rules' | 'sample';
+  mastery_before?: number | null;
+  mastery_after?: number | null;
 }
 
-export interface Document {
+export interface Quiz {
   id: string;
-  user_id: string;
+  topic_id: string | null;
+  topic_name: string | null;
+  source_document_id: string | null;
+  questions: QuizQuestion[];
+  score?: number | null;
+  feedback?: QuizFeedback | null;
+  completed_at?: string | null;
+  created_at?: string;
+}
+
+export interface SuggestedTask {
+  task: string;
+  minutes: number;
+  why: string;
+}
+
+export interface LibraryDocument {
+  id: string;
   filename: string;
   storage_path: string;
-  extracted_text: string | null;
   ai_summary: string | null;
   detected_topics: string[] | null;
   weak_topic_overlap: string[] | null;
-  suggested_tasks: { task: string; minutes: number; why: string }[] | null;
+  suggested_tasks: SuggestedTask[] | null;
+  quiz: QuizQuestion[] | null;
+  difficulty: string | null;
   processed: boolean;
+  process_error: string | null;
   created_at: string;
 }
 
-// AI response types
-export interface DailyPlanAIResponse {
-  tasks: DailyPlanTask[];
-  total_minutes: number;
-  focus_note: string;
+export interface Retest {
+  id: string;
+  topic_id: string | null;
+  topic_name: string;
+  due_date: string;
 }
 
-export interface QuizFeedbackAIResponse {
-  score: number;
-  concept_gap: string;
-  feedback: string;
-  mastery_delta: number;
-  remedial_task: { task: string; minutes: number };
-  retest_in_days: number;
+export interface QueuedTask {
+  id: string;
+  target_date: string;
+  source: 'document' | 'quiz';
+  task: PlanTask;
 }
 
-export interface DocSuggestAIResponse {
-  summary: string;
-  detected_topics: string[];
-  difficulty: string;
-  overlaps_weak_topics: string[];
-  suggested_tasks: { task: string; minutes: number; why: string }[];
-  quiz: QuizQuestion[];
-}
-
-export interface WeeklySummaryAIResponse {
+export interface WeeklyReflection {
+  id: string;
+  week_start: string;
   headline: string;
   pattern: string;
   win: string;
   next_week_focus: string;
+  source: 'ai' | 'rules' | 'sample';
 }
 
-// Supabase Database type helper
-export interface Database {
-  public: {
-    Tables: {
-      profiles: {
-        Row: Profile;
-        Insert: Partial<Profile> & { id: string; name: string };
-        Update: Partial<Profile>;
-        Relationships: [];
-      };
-      squads: {
-        Row: Squad;
-        Insert: Partial<Squad> & { name: string; exam: string };
-        Update: Partial<Squad>;
-        Relationships: [];
-      };
-      topics: {
-        Row: Topic;
-        Insert: Partial<Topic> & { exam: string; subject: string; topic_name: string };
-        Update: Partial<Topic>;
-        Relationships: [];
-      };
-      mastery: {
-        Row: Mastery;
-        Insert: Partial<Mastery> & { user_id: string; topic_id: string };
-        Update: Partial<Mastery>;
-        Relationships: [];
-      };
-      daily_plans: {
-        Row: DailyPlan;
-        Insert: Partial<DailyPlan> & { user_id: string; plan_date: string };
-        Update: Partial<DailyPlan>;
-        Relationships: [];
-      };
-      study_logs: {
-        Row: StudyLog;
-        Insert: Partial<StudyLog> & { user_id: string; log_date: string; planned_hrs: number; actual_hrs: number };
-        Update: Partial<StudyLog>;
-        Relationships: [];
-      };
-      proofs: {
-        Row: Proof;
-        Insert: Partial<Proof> & { user_id: string; proof_date: string; proof_type: string };
-        Update: Partial<Proof>;
-        Relationships: [];
-      };
-      quizzes: {
-        Row: Quiz;
-        Insert: Partial<Quiz> & { user_id: string };
-        Update: Partial<Quiz>;
-        Relationships: [];
-      };
-      documents: {
-        Row: Document;
-        Insert: Partial<Document> & { user_id: string; filename: string; storage_path: string };
-        Update: Partial<Document>;
-        Relationships: [];
-      };
-    };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
+export interface SquadMember {
+  seat: string;
+  is_me: boolean;
+  streak: number;
+  hours_week: number;
+  checkins_week: number;
+  checked_in_today: boolean;
+  last_checkin_at: string | null;
+  is_sample: boolean;
+}
+
+export interface SquadEvent {
+  occurred_at: string;
+  seat: string;
+  is_me: boolean;
+  kind: 'proof' | 'quiz' | 'study';
+  detail: string;
+  is_sample: boolean;
 }

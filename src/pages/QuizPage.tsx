@@ -1,610 +1,513 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth, DEMO_PROFILE } from '../context/AuthContext';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowRight, Check, Loader2, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { usePrefs } from '../lib/prefs';
+import { invalidate, useQuery } from '../lib/query';
 import { supabase } from '../lib/supabase';
-import { invokeAI } from '../lib/ai';
-import { AI_TASKS } from '../lib/constants';
 import {
-  QuizIcon,
-  CheckIcon,
-  ClockIcon,
-  RefreshCwIcon,
-  ArrowRightIcon,
-  AlertTriangleIcon,
-} from '../components/ui/Icons';
-import { Badge } from '../components/ui/Badge';
-import { NumberTicker } from '../components/magicui/NumberTicker';
-import { ShimmerButton } from '../components/magicui/ShimmerButton';
-import { triggerAcademicConfetti } from '../components/magicui/Confetti';
-import { BlurFade } from '../components/magicui/BlurFade';
-import { SpotlightCard } from '../components/reactbits/SpotlightCard';
-import { ClickSpark } from '../components/reactbits/ClickSpark';
-import { motion, AnimatePresence } from 'motion/react';
+  completeTask,
+  fetchMastery,
+  fetchOpenRetests,
+  fetchRecentQuizzes,
+  fetchTodayPlan,
+  queueForTomorrow,
+  scheduleRetest,
+  startTopicQuiz,
+  submitQuiz,
+} from '../lib/data';
+import { formatDay, isoDateOf, istToday } from '../lib/dates';
+import {
+  Bubble,
+  Button,
+  EmptyState,
+  ErrorState,
+  Notice,
+  PageHeader,
+  Panel,
+  Skeleton,
+  SourceLabel,
+  aiErrorMessage,
+  cx,
+  useToast,
+} from '../components/ui';
+import type { Quiz, QuizFeedback } from '../types/database';
 
-interface Question {
-  q: string;
-  options: string[];
-  answer: string;
-  concept: string;
-}
+const LETTERS = ['A', 'B', 'C', 'D'];
 
-interface QuizResult {
-  score: number;
-  total: number;
-  concept_gap: string;
-  feedback: string;
-  mastery_delta: number;
-  remedial_task: { task: string; minutes: number };
-  retest_in_days: number;
-}
+function Taking({ quiz, onResult }: { quiz: Quiz; onResult: (result: QuizFeedback) => void }) {
+  const { t } = usePrefs();
+  const storageKey = `prepsaathi_quiz_${quiz.id}`;
 
-const DEFAULT_QUESTIONS: Question[] = [
-  {
-    q: 'Two trains 140 m and 160 m long run at speeds of 60 km/h and 40 km/h respectively in opposite directions on parallel tracks. What is the time (in seconds) taken to cross each other?',
-    options: ['9.0 s', '10.8 s', '12.0 s', '15.2 s'],
-    answer: '10.8 s',
-    concept: 'Opposite Relative Speed & Sum of Lengths',
-  },
-  {
-    q: 'A thief is noticed by a policeman from a distance of 200 m. The thief starts running and the policeman chases him. The thief and the policeman run at the rate of 10 km/h and 11 km/h respectively. What is the distance between them after 6 minutes?',
-    options: ['50 m', '100 m', '120 m', '150 m'],
-    answer: '100 m',
-    concept: 'Same Direction Relative Speed & Separation Distance',
-  },
-  {
-    q: 'A man travels from A to B at 20 km/h and returns from B to A at 30 km/h over the same route. What is his average speed for the whole journey?',
-    options: ['24 km/h', '25 km/h', '26 km/h', '22 km/h'],
-    answer: '24 km/h',
-    concept: 'Harmonic Mean for Equal Distances',
-  },
-  {
-    q: 'Excluding stoppages, the speed of a bus is 54 km/h and including stoppages, it is 45 km/h. For how many minutes does the bus stop per hour?',
-    options: ['8 min', '10 min', '12 min', '15 min'],
-    answer: '10 min',
-    concept: 'Transit Stoppage Time Calculation',
-  },
-  {
-    q: 'Two runners start simultaneously from the same point on a circular track of 600 m length with speeds of 15 m/s and 25 m/s in the same direction. After how many seconds will they meet for the first time?',
-    options: ['40 s', '60 s', '75 s', '90 s'],
-    answer: '60 s',
-    concept: 'Circular Track Relative Velocity Meeting Time',
-  },
-];
+  const [answers, setAnswers] = useState<string[]>(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem(storageKey) ?? '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [picked, setPicked] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export default function QuizPage() {
-  const { profile, isDemoUser } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const currentProfile = profile || DEMO_PROFILE;
-
-  const [topicName, setTopicName] = useState<string>('Time, Speed and Distance');
-  const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const index = answers.length >= quiz.questions.length ? quiz.questions.length - 1 : answers.length;
+  const question = quiz.questions[index];
+  const isLast = index === quiz.questions.length - 1;
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    const isDocSource = searchParams.get('source') === 'doc';
-    if (isDocSource) {
-      const storedQuiz = sessionStorage.getItem('prepsaathi_active_doc_quiz');
-      if (storedQuiz) {
-        try {
-          const parsed = JSON.parse(storedQuiz);
-          if (parsed.questions && parsed.questions.length > 0) {
-            setQuestions(parsed.questions);
-            if (parsed.topic) setTopicName(parsed.topic);
-          }
-        } catch (e) {
-          console.warn('Error reading doc quiz from session:', e);
-        }
-      }
-    }
-  }, [searchParams]);
+    heading.current?.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }, [index]);
 
-  const currentQ = questions[currentIndex];
-
-  const handleSelectOption = (option: string) => {
-    if (quizResult) return;
-    setSelectedAnswers({ ...selectedAnswers, [currentIndex]: option });
-  };
-
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
-
-  const handleSubmitQuiz = async () => {
-    setIsSubmitting(true);
-    setActionNotice(null);
-
-    let correctCount = 0;
-    const qaPayload = questions.map((q, idx) => {
-      const userAns = selectedAnswers[idx] || '';
-      const isCorrect = userAns === q.answer;
-      if (isCorrect) correctCount++;
-      return {
-        question: q.q,
-        user_answer: userAns,
-        correct_answer: q.answer,
-        concept: q.concept,
-        is_correct: isCorrect,
-      };
-    });
-
+  const remember = (next: string[]) => {
+    setAnswers(next);
     try {
-      const aiResponse = await invokeAI(AI_TASKS.QUIZ_FEEDBACK, {
-        topic: topicName,
-        questions_with_user_answers: qaPayload,
-        score: correctCount,
-      });
+      sessionStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      // Progress then lasts for this visit only.
+    }
+  };
 
-      const result: QuizResult = {
-        score: correctCount,
-        total: questions.length,
-        concept_gap:
-          aiResponse?.concept_gap ||
-          'Relative motion vectors when objects move in the same direction',
-        feedback:
-          aiResponse?.feedback ||
-          'Your kinetic formulas are applied accurately for opposite directions, but when both bodies move in the same direction, the reference vector must be (S1 - S2).',
-        mastery_delta: aiResponse?.mastery_delta ?? (correctCount >= 4 ? 6 : -8),
-        remedial_task: aiResponse?.remedial_task || {
-          task: 'Solve 10 focused relative velocity chase problems without shortcuts',
-          minutes: 25,
-        },
-        retest_in_days: aiResponse?.retest_in_days || 3,
-      };
-
-      setQuizResult(result);
-
-      if (correctCount >= 4) {
-        triggerAcademicConfetti({ particleCount: 50, spread: 70 });
-      }
-
+  const submit = async (finalAnswers: string[]) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await submitQuiz(quiz.id, finalAnswers);
       try {
-        if (!isDemoUser && currentProfile.id) {
-          await supabase.from('quizzes').insert({
-            user_id: currentProfile.id,
-            score: Math.round((correctCount / questions.length) * 100),
-            questions: questions,
-            user_answers: Object.values(selectedAnswers),
-            ai_feedback: `${result.concept_gap}: ${result.feedback}`,
-          });
-
-          const { data: topicData } = await supabase
-            .from('topics')
-            .select('id')
-            .eq('topic_name', topicName)
-            .maybeSingle();
-
-          if (topicData?.id) {
-            const { data: existingMastery } = await supabase
-              .from('mastery')
-              .select('score, attempts')
-              .eq('user_id', currentProfile.id)
-              .eq('topic_id', topicData.id)
-              .maybeSingle();
-
-            const oldScore = existingMastery?.score || 35;
-            const newScore = Math.max(0, Math.min(100, oldScore + result.mastery_delta));
-
-            await supabase.from('mastery').upsert({
-              user_id: currentProfile.id,
-              topic_id: topicData.id,
-              score: newScore,
-              attempts: (existingMastery?.attempts || 1) + 1,
-              last_tested_at: new Date().toISOString(),
-            });
-          }
-        }
-      } catch (dbErr) {
-        console.warn('Mastery writeback note:', dbErr);
+        sessionStorage.removeItem(storageKey);
+      } catch {
+        // Nothing to clean up if storage is blocked.
       }
-    } catch (err) {
-      console.error('Quiz feedback AI invocation error:', err);
-      setQuizResult({
-        score: correctCount,
-        total: questions.length,
-        concept_gap: 'Relative velocity vector calculations in pursuit scenarios',
-        feedback:
-          'Formula application breaks down when both bodies move in the same direction. Practice two-step vector subtraction.',
-        mastery_delta: -6,
-        remedial_task: {
-          task: 'Practice 10 relative-motion chase questions without shortcuts',
-          minutes: 25,
-        },
-        retest_in_days: 3,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleAddRemedialTask = async () => {
-    if (!quizResult) return;
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-
-    try {
-      if (!isDemoUser && currentProfile.id) {
-        const { data: existingPlan } = await supabase
-          .from('daily_plans')
-          .select('*')
-          .eq('user_id', currentProfile.id)
-          .eq('plan_date', tomorrowStr)
-          .maybeSingle();
-
-        const curTasks = existingPlan?.tasks?.tasks || [];
-        const newTask = {
-          subject: 'Quantitative Aptitude',
-          topic: topicName,
-          task: quizResult.remedial_task.task,
-          minutes: quizResult.remedial_task.minutes,
-          type: 'weak_topic',
-          why: `Remedial task triggered by diagnostic gap: ${quizResult.concept_gap}`,
-          completed: false,
-        };
-
-        await supabase.from('daily_plans').upsert({
-          user_id: currentProfile.id,
-          plan_date: tomorrowStr,
-          tasks: {
-            tasks: [...curTasks, newTask],
-            total_minutes: 160,
-            focus_note: `Reinforce ${quizResult.concept_gap} identified during quiz testing.`,
-          },
-          completed_count: 0,
-        });
-      }
+      onResult(result);
     } catch (e) {
-      console.warn('Remedial task plan insert:', e);
+      setError(aiErrorMessage(e, t));
+      setSubmitting(false);
     }
-
-    setActionNotice(
-      `✓ Remedial task ("${quizResult.remedial_task.task}") has been queued into tomorrow's plan!`
-    );
   };
 
-  const handleSpacedRetry = () => {
-    setActionNotice(
-      `✓ Spaced repetition scheduled: You will be re-tested on "${topicName}" in 3 days to verify retention.`
-    );
+  const next = () => {
+    if (!picked) return;
+    if (isLast) {
+      const finalAnswers = [...answers.slice(0, index), picked];
+      remember(finalAnswers);
+      void submit(finalAnswers);
+    } else {
+      remember([...answers, picked]);
+      setPicked(null);
+    }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <BlurFade delay={0.05}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/90">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
-                5-Question Diagnostic Assessment
-              </h1>
-              <Badge variant="primary">
-                <span>{topicName}</span>
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Simulated exam conditions. Questions target your detected weak spots to dynamically adapt tomorrow's schedule.
-            </p>
-          </div>
+    <div className="max-w-2xl">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <p className="font-medium text-print-dark">{quiz.topic_name ?? t('Mixed')}</p>
+        <ol className="flex gap-1.5" aria-label={t('Question {n} of {m}', { n: index + 1, m: quiz.questions.length })}>
+          {quiz.questions.map((_, i) => (
+            <li key={i}>
+              <Bubble size={16} filled={i < index} className={i === index ? 'ring-2 ring-print ring-offset-1' : undefined} />
+            </li>
+          ))}
+        </ol>
+      </div>
 
-          <div className="flex items-center gap-2">
-            <Badge variant="neutral">
-              <ClockIcon size={12} />
-              <span>Under 24h Loop</span>
-            </Badge>
-          </div>
-        </div>
-      </BlurFade>
+      <h1 ref={heading} tabIndex={-1} className="text-xl sm:text-[1.375rem] leading-snug font-semibold mb-5 outline-none">
+        <span className="sr-only">{t('Question {n} of {m}', { n: index + 1, m: quiz.questions.length })}: </span>
+        {question.q}
+      </h1>
 
-      {/* 2-Column Responsive Cockpit */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* MAIN PANEL (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          {!quizResult ? (
-            <BlurFade delay={0.1}>
-              <div className="bg-white rounded-3xl shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] border border-slate-200/90 p-6 sm:p-8 space-y-6">
-                {/* Progress bar at top */}
-                <div className="space-y-3 pb-4 border-b border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-navy uppercase tracking-wider">
-                      Question {currentIndex + 1} of {questions.length}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-blue">
-                      {Math.round(((currentIndex + 1) / questions.length) * 100)}% Complete
-                    </span>
-                  </div>
-
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div
-                      animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-                      transition={{ duration: 0.3 }}
-                      className="h-full bg-blue rounded-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Question Text with Animated Entrance */}
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentIndex}
-                    initial={{ opacity: 0, x: 12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -12 }}
-                    transition={{ duration: 0.2 }}
-                    className="min-h-[90px] flex items-center p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80"
-                  >
-                    <p className="text-base sm:text-lg font-extrabold text-navy leading-relaxed">
-                      {currentQ.q}
-                    </p>
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Options with ClickSpark and SpotlightCard */}
-                <div className="space-y-3">
-                  {currentQ.options.map((opt, oIdx) => {
-                    const isSelected = selectedAnswers[currentIndex] === opt;
-                    const letter = String.fromCharCode(65 + oIdx);
-                    return (
-                      <ClickSpark key={oIdx} sparkColor="#2563EB" className="w-full">
-                        <SpotlightCard
-                          onClick={() => handleSelectOption(opt)}
-                          spotlightColor="rgba(37, 99, 235, 0.08)"
-                          className={`p-4 sm:p-5 cursor-pointer text-sm font-semibold transition-all flex items-center gap-4 rounded-2xl border ${
-                            isSelected
-                              ? 'border-blue bg-blue-50/70 text-blue-950 font-bold ring-2 ring-blue/30 shadow-md'
-                              : 'border-slate-200/90 bg-white text-slate-700 hover:border-slate-300'
-                          }`}
-                        >
-                          <span
-                            className={`w-8 h-8 rounded-xl flex items-center justify-center font-extrabold text-xs flex-shrink-0 transition-colors ${
-                              isSelected ? 'bg-blue text-white shadow-xs' : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            {letter}
-                          </span>
-                          <span className="flex-1 text-sm sm:text-base font-medium">{opt}</span>
-                        </SpotlightCard>
-                      </ClickSpark>
-                    );
-                  })}
-                </div>
-
-                {/* Forward Navigation Only */}
-                <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100">
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    Exam discipline active: Forward navigation only
-                  </span>
-
-                  {currentIndex < questions.length - 1 ? (
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      type="button"
-                      disabled={!selectedAnswers[currentIndex]}
-                      onClick={handleNext}
-                      className="px-6 py-3 rounded-2xl bg-blue hover:bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue/20 transition disabled:opacity-40 cursor-pointer self-start sm:self-auto"
-                    >
-                      Next Question →
-                    </motion.button>
-                  ) : (
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      type="button"
-                      disabled={!selectedAnswers[currentIndex] || isSubmitting}
-                      onClick={handleSubmitQuiz}
-                      className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition disabled:opacity-40 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Analyzing Concept Gap with Groq AI...</span>
-                        </>
-                      ) : (
-                        <span>Submit Quiz & Get Concept Feedback →</span>
-                      )}
-                    </motion.button>
-                  )}
-                </div>
-              </div>
-            </BlurFade>
-          ) : (
-            /* QUIZ FEEDBACK VIEW */
-            <BlurFade delay={0.1}>
-              <div className="bg-white rounded-3xl shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] border border-slate-200/90 p-6 sm:p-8 space-y-6">
-                {/* Header Outcome Box with NumberTicker */}
-                <div className="p-6 sm:p-7 rounded-3xl bg-[#0B1F3A] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-navy/15 border border-blue-900/40">
-                  <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-sky block">
-                      Diagnostic Assessment Result
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-white mt-1 flex items-center gap-2">
-                      <NumberTicker value={quizResult.score} />
-                      <span>of</span>
-                      <NumberTicker value={quizResult.total} />
-                      <span>Correct</span>
-                    </h2>
-                    <p className="text-xs text-slate-300 mt-1">
-                      Mastery Delta: <span className="text-orange-400 font-bold font-mono">{quizResult.mastery_delta}%</span> written to profile
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 px-4 rounded-2xl bg-white/10 border border-white/15 text-center self-start sm:self-auto">
-                    <span className="text-[11px] text-slate-300 uppercase tracking-wider font-extrabold block">Topic Status</span>
-                    <span className="text-sm font-bold text-orange-400">
-                      Weak Topic (Requires Remediation)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Concept Gap Feedback Box */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-orange-50/70 border-2 border-orange-200 space-y-2.5">
-                  <div className="flex items-center gap-2 text-orange">
-                    <AlertTriangleIcon size={18} className="text-orange" />
-                    <h3 className="text-sm font-extrabold uppercase tracking-wider">
-                      Underlying Concept Gap: {quizResult.concept_gap}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-slate-800 leading-relaxed font-medium">
-                    {quizResult.feedback}
-                  </p>
-                </div>
-
-                {actionNotice && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900 flex items-center gap-2"
-                  >
-                    <CheckIcon size={14} className="text-emerald-700" />
-                    <span>{actionNotice}</span>
-                  </motion.div>
+      <fieldset disabled={submitting}>
+        <legend className="sr-only">{t('Choose one answer')}</legend>
+        <div className="flex flex-col gap-2">
+          {question.options.map((option, i) => {
+            const selected = picked === option;
+            return (
+              <label
+                key={option}
+                className={cx(
+                  'flex items-center gap-3 min-h-13 px-3 py-2 rounded-sheet border transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink',
+                  selected ? 'border-ink' : 'border-line hover:border-print'
                 )}
-
-                {/* Action Buttons: Add Remedial Task & Retry in 3 Days */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-                  <ShimmerButton
-                    onClick={handleAddRemedialTask}
-                    className="w-full py-3.5 px-4 text-xs font-bold shadow-md shadow-blue/20"
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <QuizIcon size={16} />
-                      <span>Add Remedial Task to Tomorrow</span>
-                    </div>
-                  </ShimmerButton>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="button"
-                    onClick={handleSpacedRetry}
-                    className="py-3.5 px-4 rounded-2xl bg-navy hover:bg-[#162E52] text-white font-bold text-xs shadow-md shadow-navy/20 transition flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <RefreshCwIcon size={14} />
-                    <span>Retry in {quizResult.retest_in_days} Days (Spaced Repetition)</span>
-                  </motion.button>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQuizResult(null);
-                      setSelectedAnswers({});
-                      setCurrentIndex(0);
-                      setActionNotice(null);
-                    }}
-                    className="text-slate-500 hover:text-navy font-bold cursor-pointer"
-                  >
-                    ← Take Another Diagnostic
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/plan')}
-                    className="font-bold text-blue hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>View Tomorrow's Updated Plan</span>
-                    <ArrowRightIcon size={12} />
-                  </button>
-                </div>
-              </div>
-            </BlurFade>
-          )}
+              >
+                <input
+                  type="radio"
+                  name={`q-${index}`}
+                  className="sr-only"
+                  checked={selected}
+                  onChange={() => setPicked(option)}
+                />
+                <Bubble filled={selected} size={28} label={LETTERS[i]} />
+                <span className="min-w-0">{option}</span>
+              </label>
+            );
+          })}
         </div>
+      </fieldset>
 
-        {/* SIDEBAR COCKPIT (4 cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Question Navigator */}
-          <BlurFade delay={0.15}>
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] p-6 space-y-4">
-              <h3 className="font-extrabold text-sm text-navy tracking-tight">Question Navigator</h3>
-              <div className="grid grid-cols-5 gap-2.5">
-                {questions.map((_, idx) => {
-                  const isCurrent = idx === currentIndex;
-                  const isAnswered = Boolean(selectedAnswers[idx]);
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      disabled={quizResult !== null}
-                      onClick={() => setCurrentIndex(idx)}
-                      className={`h-11 rounded-2xl font-bold font-mono text-xs flex items-center justify-center transition-all ${
-                        isCurrent
-                          ? 'bg-blue text-white ring-2 ring-blue/30 shadow-sm'
-                          : isAnswered
-                          ? 'bg-[#0B1F3A] text-white'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}
-                    >
-                      {idx + 1}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue" />
-                  <span>Current</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#0B1F3A]" />
-                  <span>Answered</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-200" />
-                  <span>Pending</span>
-                </span>
-              </div>
+      {error && <Notice tone="error" className="mt-4">{error}</Notice>}
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-ink-soft">{t('No going back, same as the exam hall.')}</p>
+        <Button disabled={!picked} loading={submitting} onClick={next}>
+          {submitting ? t('Finding the concept gap...') : isLast ? t('Submit quiz') : t('Next question')}
+          {!submitting && <ArrowRight size={18} aria-hidden="true" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Result({ quiz, result, onAnother }: { quiz: Quiz; result: QuizFeedback; onAnother: () => void }) {
+  const { user } = useAuth();
+  const { t } = usePrefs();
+  const toast = useToast();
+  const uid = user!.id;
+
+  const [queued, setQueued] = useState(false);
+  const [retestSet, setRetestSet] = useState(false);
+  const [busy, setBusy] = useState<'queue' | 'retest' | null>(null);
+
+  const retestDays = result.retest_in_days ?? 3;
+  const graded = (result as QuizFeedback & { graded?: { question: string; user_answer: string; correct_answer: string; is_correct: boolean; concept: string }[] }).graded ?? [];
+
+  const addRemedial = async () => {
+    if (!result.remedial_task) return;
+    setBusy('queue');
+    try {
+      await queueForTomorrow(uid, 'quiz', {
+        subject: '',
+        topic: quiz.topic_name ?? 'Mixed',
+        task: result.remedial_task.task,
+        minutes: result.remedial_task.minutes,
+        type: 'remedial',
+        why: result.concept_gap ? `Quiz gap: ${result.concept_gap}` : 'From your last quiz',
+      });
+      invalidate('queue:');
+      setQueued(true);
+    } catch (e) {
+      console.error('Could not queue remedial task:', e);
+      toast(t('Could not save. Check your connection and try again.'), 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const setRetest = async () => {
+    setBusy('retest');
+    try {
+      await scheduleRetest(uid, quiz, retestDays);
+      invalidate('retests:');
+      setRetestSet(true);
+    } catch (e) {
+      console.error('Could not schedule retest:', e);
+      toast(t('Could not save. Check your connection and try again.'), 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl">
+      <h1 className="text-[1.75rem] sm:text-[2.25rem] leading-tight font-bold">
+        {t('{n} of {m}.', { n: result.score, m: result.total })}{' '}
+        {result.concept_gap && <span className="text-print">{t('The pattern is {concept}.', { concept: result.concept_gap })}</span>}
+      </h1>
+      <p className="mt-1.5 text-ink-soft">{quiz.topic_name ?? t('Mixed')}</p>
+      <p className="mt-3 text-lg leading-relaxed">{result.feedback}</p>
+      <div className="mt-2"><SourceLabel source={result.source} /></div>
+
+      {typeof result.mastery_after === 'number' && (
+        <Notice className="mt-4">
+          {t('{topic} moved from {a}% to {b}%. Tomorrow\'s plan will use this.', {
+            topic: quiz.topic_name ?? '',
+            a: result.mastery_before ?? 50,
+            b: result.mastery_after,
+          })}
+        </Notice>
+      )}
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        {result.remedial_task &&
+          (queued ? (
+            <span className="inline-flex items-center gap-1.5 min-h-11 font-medium">
+              <Check size={18} aria-hidden="true" />
+              {t('Remedial task added to tomorrow')}
+            </span>
+          ) : (
+            <Button loading={busy === 'queue'} onClick={addRemedial}>
+              {t('Add remedial task to tomorrow')}
+            </Button>
+          ))}
+        {quiz.topic_id &&
+          (retestSet ? (
+            <span className="inline-flex items-center gap-1.5 min-h-11 font-medium">
+              <Check size={18} aria-hidden="true" />
+              {t('Retest set for {n} days from now', { n: retestDays })}
+            </span>
+          ) : (
+            <Button variant="print" loading={busy === 'retest'} onClick={setRetest}>
+              {t('Retest in {n} days', { n: retestDays })}
+            </Button>
+          ))}
+      </div>
+
+      {result.remedial_task && <p className="mt-2 text-sm text-ink-soft">{result.remedial_task.task}</p>}
+
+      {graded.length > 0 && (
+        <details className="mt-6 border-t border-line pt-3">
+          <summary className="font-semibold text-print-dark">{t('Review your answers')}</summary>
+          <ol className="mt-3 flex flex-col gap-4">
+            {graded.map((g, i) => (
+              <li key={i}>
+                <p className="font-medium">{g.question}</p>
+                <p className="mt-1 flex items-start gap-1.5 text-sm">
+                  {g.is_correct ? <Check size={16} className="mt-0.5 flex-none" aria-hidden="true" /> : <X size={16} className="mt-0.5 flex-none text-print" aria-hidden="true" />}
+                  <span>
+                    {t('Your answer: {a}', { a: g.user_answer })}
+                    {!g.is_correct && <><br />{t('Correct answer: {a}', { a: g.correct_answer })}</>}
+                  </span>
+                </p>
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
+
+      <div className="mt-6 flex flex-wrap gap-3 items-center">
+        <Button variant="ghost" onClick={onAnother}>{t('Take another quiz')}</Button>
+        <Link to="/plan" className="font-semibold text-print-dark">{t("See today's plan")}</Link>
+      </div>
+    </div>
+  );
+}
+
+export default function QuizPage() {
+  const { user } = useAuth();
+  const { t, lang } = usePrefs();
+  const uid = user!.id;
+  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const quizId = params.get('id');
+  const topicParam = params.get('topic');
+
+  const mastery = useQuery(`mastery:${uid}`, () => fetchMastery(uid));
+  const recent = useQuery(`quizzes:${uid}`, () => fetchRecentQuizzes(uid, 30));
+  const retests = useQuery(`retests:${uid}`, () => fetchOpenRetests(uid));
+
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [result, setResult] = useState<QuizFeedback | null>(null);
+  const [generating, setGenerating] = useState<string | null>(null);
+  const [genError, setGenError] = useState<unknown>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
+  // A quiz can be reached by link from the library, or after a reload mid-quiz.
+  useEffect(() => {
+    if (!quizId || quiz?.id === quizId) return;
+    let cancelled = false;
+    void supabase
+      .from('quizzes')
+      .select('id, topic_id, topic_name, source_document_id, questions, score, feedback, completed_at')
+      .eq('id', quizId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data) {
+          setLoadFailed(true);
+          return;
+        }
+        setQuiz(data as Quiz);
+        if (data.completed_at && data.feedback) setResult(data.feedback as QuizFeedback);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [quizId, quiz?.id]);
+
+  const begin = async (topicId: string, topicName: string) => {
+    setGenerating(topicName);
+    setGenError(null);
+    try {
+      const created = await startTopicQuiz(topicId);
+      setQuiz(created);
+      setResult(null);
+      setParams({ id: created.id }, { replace: true });
+    } catch (e) {
+      setGenError(e);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  // ?topic= comes from a due retest on the plan or dashboard.
+  const startedFromParam = useRef(false);
+  useEffect(() => {
+    if (!topicParam || startedFromParam.current || !mastery.data) return;
+    const row = mastery.data.find((m) => m.topics.topic_name === topicParam);
+    if (row) {
+      startedFromParam.current = true;
+      void begin(row.topic_id, topicParam);
+    }
+    // begin only depends on values that are stable for this effect's purpose.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicParam, mastery.data]);
+
+  const finish = async (feedback: QuizFeedback) => {
+    setResult(feedback);
+    invalidate('mastery:', 'quizzes:', 'retests:', 'plan:', 'squad:');
+    // Taking a scheduled retest also fills its bubble on today's plan.
+    if (quiz?.topic_name) {
+      try {
+        const plan = await fetchTodayPlan();
+        const index = plan.tasks.tasks.findIndex((x) => x.type === 'retest' && x.topic === quiz.topic_name && !x.completed);
+        if (index >= 0) {
+          await completeTask(index, plan.tasks.tasks[index].minutes, '');
+          invalidate('plan:', 'logs:');
+        }
+      } catch (e) {
+        console.error('Could not mark the retest task:', e);
+      }
+    }
+  };
+
+  const reset = () => {
+    setQuiz(null);
+    setResult(null);
+    setGenError(null);
+    setLoadFailed(false);
+    startedFromParam.current = false;
+    navigate('/quiz', { replace: true });
+  };
+
+  const sorted = useMemo(() => mastery.data ?? [], [mastery.data]);
+  const visible = showAll ? sorted : sorted.slice(0, 6);
+  const dueRetests = (retests.data ?? []).filter((r) => r.due_date <= istToday());
+  const laterRetests = (retests.data ?? []).filter((r) => r.due_date > istToday());
+  const finished = useMemo(() => (recent.data ?? []).slice(0, 6), [recent.data]);
+
+  if (quizId && loadFailed) {
+    return (
+      <div className="max-w-md">
+        <Notice tone="error">{t('This quiz could not be found.')}</Notice>
+        <Button variant="print" className="mt-3" onClick={reset}>{t('Back to quizzes')}</Button>
+      </div>
+    );
+  }
+
+  if (generating) {
+    return (
+      <div className="max-w-md flex items-start gap-3 py-6" role="status">
+        <Loader2 size={22} className="spin text-print mt-0.5" aria-hidden="true" />
+        <div>
+          <p className="font-semibold">{t('Writing 5 questions on {topic}...', { topic: generating })}</p>
+          <p className="text-ink-soft">{t('This usually takes a few seconds.')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (quiz && result) return <Result quiz={quiz} result={result} onAnother={reset} />;
+  if (quiz) return <Taking quiz={quiz} onResult={finish} />;
+  if (quizId) return <Skeleton className="h-60 max-w-2xl" />;
+
+  return (
+    <div>
+      <PageHeader
+        title={t('Quiz')}
+        sub={t('Five questions on one topic. You get back the concept you are missing, not just a score, and your result changes tomorrow\'s plan.')}
+      />
+
+      {genError != null && <Notice tone="error" className="mb-4">{aiErrorMessage(genError, t)}</Notice>}
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start">
+        <Panel title={t('Your weakest topics first')}>
+          {mastery.error && !mastery.data ? (
+            <ErrorState error={mastery.error} onRetry={mastery.refetch} />
+          ) : mastery.isLoading ? (
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
             </div>
-          </BlurFade>
-
-          {/* Exam Discipline Rules */}
-          <BlurFade delay={0.2}>
-            <div className="bg-[#0B1F3A] text-white rounded-3xl border border-blue-900/40 shadow-xl shadow-navy/15 p-6 space-y-3.5">
-              <span className="text-xs font-black uppercase tracking-wider text-sky">Exam Discipline Rules</span>
-              <ul className="text-xs text-slate-300 space-y-2 leading-relaxed">
-                <li className="flex items-start gap-2">
-                  <span className="text-sky font-bold">•</span>
-                  <span><strong>Forward only:</strong> Mimics strict computer-based test conditions.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-sky font-bold">•</span>
-                  <span><strong>Concept diagnosis:</strong> Identifies the exact rule breakdown instead of just giving an arbitrary percentage.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-sky font-bold">•</span>
-                  <span><strong>Adaptive tomorrow:</strong> Missed concepts are scheduled into tomorrow's study block.</span>
-                </li>
+          ) : (
+            <>
+              <ul className="divide-y divide-line">
+                {visible.map((m) => (
+                  <li key={m.topic_id} className="flex items-center gap-3 py-2 first:pt-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-snug">{m.topics.topic_name}</p>
+                      <p className="text-sm text-ink-soft">
+                        {m.topics.subject} · {m.attempts === 0 ? t('Starting score {n}%', { n: m.score }) : t('{n}%', { n: m.score })}
+                      </p>
+                    </div>
+                    <Button small variant="print" onClick={() => begin(m.topic_id, m.topics.topic_name)}>
+                      {t('Start')}
+                    </Button>
+                  </li>
+                ))}
               </ul>
-            </div>
-          </BlurFade>
+              {sorted.length > 6 && (
+                <Button small variant="ghost" className="mt-2" onClick={() => setShowAll((v) => !v)}>
+                  {showAll ? t('Show fewer') : t('Show all {n} topics', { n: sorted.length })}
+                </Button>
+              )}
+            </>
+          )}
+        </Panel>
 
-          {/* Mastery Benchmark */}
-          <BlurFade delay={0.25}>
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(11,31,58,0.06)] p-6 space-y-3.5">
-              <h4 className="font-extrabold text-sm text-navy">Topic Mastery Benchmark</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-slate-500">Current Measured</span>
-                  <span className="font-mono text-orange font-bold">32%</span>
-                </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-orange rounded-full" style={{ width: '32%' }} />
-                </div>
-                <div className="flex justify-between text-[11px] text-slate-400">
-                  <span>Cutoff Target: 75%</span>
-                  <span className="text-rose-600 font-bold">-43% Deficit</span>
-                </div>
-              </div>
-            </div>
-          </BlurFade>
+        <div className="flex flex-col gap-8">
+          {retests.error != null && !retests.data && <ErrorState error={retests.error} onRetry={retests.refetch} />}
+          {(dueRetests.length > 0 || laterRetests.length > 0) && (
+            <Panel title={t('Retests')}>
+              <ul className="divide-y divide-line">
+                {dueRetests.map((r) => (
+                  <li key={r.id} className="flex items-center gap-2 py-2 first:pt-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{r.topic_name}</p>
+                      <p className="text-sm text-print-dark">{t('Due now')}</p>
+                    </div>
+                    {r.topic_id && (
+                      <Button small onClick={() => begin(r.topic_id!, r.topic_name)}>
+                        {t('Start')}
+                      </Button>
+                    )}
+                  </li>
+                ))}
+                {laterRetests.map((r) => (
+                  <li key={r.id} className="py-2 first:pt-0">
+                    <p className="font-medium">{r.topic_name}</p>
+                    <p className="text-sm text-ink-soft">{t('Due {date}', { date: formatDay(r.due_date, lang) })}</p>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+
+          <Panel title={t('Recent results')}>
+            {recent.error && !recent.data ? (
+              <ErrorState error={recent.error} onRetry={recent.refetch} />
+            ) : recent.isLoading ? (
+              <Skeleton className="h-16" />
+            ) : finished.length === 0 ? (
+              <EmptyState title={t('No quizzes yet')}>{t('Start with your weakest topic.')}</EmptyState>
+            ) : (
+              <ul className="divide-y divide-line">
+                {finished.map((q) => (
+                  <li key={q.id} className="flex items-baseline gap-2 py-2 first:pt-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-snug">{q.topic_name ?? t('Mixed')}</p>
+                      <p className="text-sm text-ink-soft">
+                        {q.completed_at && formatDay(isoDateOf(q.completed_at), lang)}
+                        {q.feedback?.concept_gap ? ` · ${q.feedback.concept_gap}` : ''}
+                      </p>
+                    </div>
+                    <span className="font-bold">{q.score}%</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
         </div>
       </div>
     </div>

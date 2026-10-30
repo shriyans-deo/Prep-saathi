@@ -1,564 +1,256 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { EXAMS, CITY_TIERS, MASTERY } from '../lib/constants';
-import { CheckIcon, FlameIcon, ArrowRightIcon, FlagIcon } from '../components/ui/Icons';
-import { Badge } from '../components/ui/Badge';
-import { BorderBeam } from '../components/magicui/BorderBeam';
-import { SpotlightCard } from '../components/reactbits/SpotlightCard';
-import { ClickSpark } from '../components/reactbits/ClickSpark';
-import { NumberTicker } from '../components/magicui/NumberTicker';
-import { motion, AnimatePresence } from 'motion/react';
+import { usePrefs } from '../lib/prefs';
+import { completeOnboarding, fetchExamSubjects, fetchSquadBoard } from '../lib/data';
+import { useQuery } from '../lib/query';
+import { Bubble, Button, ErrorState, Notice, Segmented, Skeleton, cx, inputClass } from '../components/ui';
 
-const SUBJECT_OPTIONS: Record<string, string[]> = {
-  'SSC CGL': [
-    'Quantitative Aptitude - Arithmetic & Percentages',
-    'Quantitative Aptitude - Advanced (Geometry & Algebra)',
-    'Logical & Analytical Reasoning',
-    'English Comprehension & Vocabulary',
-    'General Awareness - Modern History & Polity',
-    'General Awareness - General Science & Static GK',
-  ],
-  'UPSC CSE': [
-    'Indian Polity & Constitution',
-    'Modern Indian History & Freedom Struggle',
-    'Physical & Indian Geography',
-    'Indian Economy & Union Budget',
-    'Environment & Biodiversity',
-    'CSAT - Quantitative & Reasoning',
-  ],
-  'IBPS PO': [
-    'Quantitative Aptitude & Data Interpretation',
-    'Reasoning Ability & Analytical Puzzles',
-    'English Language & Reading Comprehension',
-    'Banking Awareness & Financial GK',
-    'Computer Knowledge',
-  ],
-  'RRB NTPC': [
-    'Mathematics & Numerical Ability',
-    'General Intelligence & Reasoning',
-    'General Science (Physics/Chemistry/Bio)',
-    'General Awareness & Current Affairs',
-  ],
-};
+const EXAMS = ['SSC CGL', 'SSC CHSL', 'IBPS PO', 'IBPS Clerk', 'UPSC CSE', 'UPSC CAPF', 'RRB NTPC'];
 
-const SQUAD_PREVIEWS: Record<
-  string,
-  { name: string; members: { name: string; streak: number; status: string }[] }
-> = {
-  'SSC CGL': {
-    name: 'SSC CGL Mission 2026',
-    members: [
-      { name: 'Aspirant A (Rank Target < 500)', streak: 18, status: 'Checked in 2h ago' },
-      { name: 'Aspirant B (Tier-2 Delhi)', streak: 14, status: 'Checked in 45m ago' },
-      { name: 'Aspirant C (Repeat Attempt)', streak: 9, status: 'Checked in 4h ago' },
-      { name: 'Aspirant D (Patna)', streak: 7, status: 'Pending today' },
-      { name: 'Aspirant E (Self-study)', streak: 4, status: 'Pending today' },
-    ],
-  },
-  'UPSC CSE': {
-    name: 'UPSC CSE Focus Batch',
-    members: [
-      { name: 'Aspirant A (Optional: PSIR)', streak: 21, status: 'Checked in 1h ago' },
-      { name: 'Aspirant B (Prelims 2026)', streak: 16, status: 'Checked in 3h ago' },
-      { name: 'Aspirant C (Jaipur)', streak: 11, status: 'Checked in 5h ago' },
-      { name: 'Aspirant D (CSAT Focus)', streak: 8, status: 'Pending today' },
-      { name: 'Aspirant E (Working Professional)', streak: 5, status: 'Pending today' },
-    ],
-  },
-  default: {
-    name: 'National Aspirants Cohort #4',
-    members: [
-      { name: 'Aspirant A', streak: 15, status: 'Checked in 1h ago' },
-      { name: 'Aspirant B', streak: 12, status: 'Checked in 3h ago' },
-      { name: 'Aspirant C', streak: 8, status: 'Checked in 5h ago' },
-      { name: 'Aspirant D', streak: 6, status: 'Pending today' },
-      { name: 'Aspirant E', streak: 3, status: 'Pending today' },
-    ],
-  },
-};
+const CITY_TIERS = [
+  { value: 'metro', label: 'Metro city' },
+  { value: 'tier2', label: 'Tier 2 city' },
+  { value: 'small_town', label: 'Small town or rural' },
+];
+
+const ATTEMPTS = [
+  { value: '1', label: '1st' },
+  { value: '2', label: '2nd' },
+  { value: '3', label: '3rd' },
+  { value: '4', label: '4+' },
+];
 
 export default function OnboardingPage() {
-  const { user, profile, updateProfileState, refreshProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
+  const { t } = usePrefs();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState(1);
+  const [exam, setExam] = useState('');
+  const [attempt, setAttempt] = useState('1');
+  const [cityTier, setCityTier] = useState('tier2');
+  const [target, setTarget] = useState(6);
+  const [weak, setWeak] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
 
-  const [exam, setExam] = useState<string>(profile?.exam || 'SSC CGL');
-  const [attemptNumber, setAttemptNumber] = useState<number>(profile?.attempt_number || 1);
-  const [cityTier, setCityTier] = useState<string>(profile?.city_tier || 'tier2');
+  const subjects = useQuery(exam ? `subjects:${exam}` : null, () => fetchExamSubjects(exam));
+  const board = useQuery(step === 3 ? 'onboarding-squad' : null, fetchSquadBoard);
 
-  const [dailyTargetHrs, setDailyTargetHrs] = useState<number>(profile?.daily_target_hrs || 6);
-  const [weakSubjects, setWeakSubjects] = useState<string[]>([
-    'Quantitative Aptitude - Advanced (Geometry & Algebra)',
-    'Logical & Analytical Reasoning',
-    'General Awareness - Modern History & Polity',
-  ]);
+  const others = useMemo(() => (board.data ?? []).filter((m) => !m.is_me), [board.data]);
 
-  const availableSubjects = SUBJECT_OPTIONS[exam] || SUBJECT_OPTIONS['SSC CGL'];
-  const squadPreview = SQUAD_PREVIEWS[exam] || SQUAD_PREVIEWS.default;
+  // Already onboarded and arriving here fresh: nothing to do. Step 3 is reached before the
+  // profile refreshes, so this only fires on a real revisit.
+  if (profile?.exam && step === 1) return <Navigate to="/dashboard" replace />;
 
-  const toggleSubject = (subj: string) => {
-    if (weakSubjects.includes(subj)) {
-      setWeakSubjects(weakSubjects.filter((s) => s !== subj));
-    } else {
-      if (weakSubjects.length >= 3) {
-        setWeakSubjects([...weakSubjects.slice(1), subj]);
-      } else {
-        setWeakSubjects([...weakSubjects, subj]);
-      }
+  const toggleWeak = (subject: string) => {
+    setWeak((current) =>
+      current.includes(subject)
+        ? current.filter((s) => s !== subject)
+        : current.length < 3
+          ? [...current, subject]
+          : current
+    );
+  };
+
+  const finishSetup = async () => {
+    setSaving(true);
+    setSaveFailed(false);
+    try {
+      await completeOnboarding({
+        exam,
+        attempt: Number(attempt),
+        cityTier,
+        dailyTarget: target,
+        weakSubjects: weak,
+      });
+      setStep(3);
+    } catch (e) {
+      console.error('Onboarding failed:', e);
+      setSaveFailed(true);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleFinishOnboarding = async () => {
-    setSubmitting(true);
-    try {
-      if (user?.id) {
-        let squadId = profile?.squad_id;
-        try {
-          const { data: existingSquad } = await supabase
-            .from('squads')
-            .select('id')
-            .eq('name', squadPreview.name)
-            .maybeSingle();
-
-          if (existingSquad?.id) {
-            squadId = existingSquad.id;
-          } else {
-            const { data: newSquad } = await supabase
-              .from('squads')
-              .insert({
-                name: squadPreview.name,
-                exam: exam,
-                member_count: 6,
-              })
-              .select('id')
-              .single();
-            if (newSquad) squadId = newSquad.id;
-          }
-        } catch (e) {
-          console.warn('Squad assignment fallback:', e);
-        }
-
-        try {
-          await supabase
-            .from('profiles')
-            .upsert({
-              id: user.id,
-              name: profile?.name || 'Aspirant',
-              exam,
-              attempt_number: attemptNumber,
-              city_tier: cityTier,
-              daily_target_hrs: dailyTargetHrs,
-              squad_id: squadId,
-              streak_count: profile?.streak_count || 1,
-              total_points: profile?.total_points || 50,
-            });
-        } catch (e) {
-          console.warn('Profile update note:', e);
-        }
-
-        try {
-          const { data: topics } = await supabase
-            .from('topics')
-            .select('id, topic_name, subject')
-            .eq('exam', exam);
-
-          if (topics && topics.length > 0) {
-            const masteryInserts = topics.map((t: any) => {
-              const isWeak = weakSubjects.some(
-                (w) =>
-                  w.toLowerCase().includes(t.subject.toLowerCase()) ||
-                  w.toLowerCase().includes(t.topic_name.toLowerCase())
-              );
-              return {
-                user_id: user.id,
-                topic_id: t.id,
-                score: isWeak ? MASTERY.WEAK_SEED : MASTERY.DEFAULT_SEED,
-                status: isWeak ? 'weak' : 'learning',
-                attempts: 1,
-              };
-            });
-
-            await supabase
-              .from('mastery')
-              .upsert(masteryInserts, { onConflict: 'user_id,topic_id' });
-          }
-        } catch (e) {
-          console.warn('Mastery seeding note:', e);
-        }
-      }
-
-      updateProfileState({
-        exam,
-        attempt_number: attemptNumber,
-        city_tier: cityTier,
-        daily_target_hrs: dailyTargetHrs,
-      });
-
-      await refreshProfile();
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Onboarding submission error:', err);
-      navigate('/dashboard');
-    } finally {
-      setSubmitting(false);
-    }
+  const openDashboard = async () => {
+    await refreshProfile();
+    navigate('/dashboard', { replace: true });
   };
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col justify-center items-center p-4 py-10">
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Top Progress Header */}
-        <div className="bg-navy p-6 sm:p-7 text-white">
-          <div className="flex items-center justify-between text-xs text-sky mb-2.5">
-            <span className="font-bold uppercase tracking-wider">Aspirant Diagnostic Baseline</span>
-            <span className="font-mono font-semibold">Step {step} of 3</span>
-          </div>
-          <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-            <motion.div
-              className="bg-blue h-full rounded-full"
-              initial={{ width: '33%' }}
-              animate={{ width: `${(step / 3) * 100}%` }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-            />
-          </div>
-        </div>
+    <div className="min-h-dvh flex flex-col">
+      <header className="bg-print text-white px-5 py-3 flex items-center justify-between gap-4">
+        <span className="text-xl font-bold">PrepSaathi</span>
+        <span className="text-sm font-medium ml-auto">{t('Step {n} of 3', { n: step })}</span>
+        <ol className="flex items-center gap-2" aria-hidden="true">
+          {[1, 2, 3].map((n) => (
+            <li key={n}>
+              <span
+                className={cx('block w-5 h-5 rounded-full border-[1.5px]', n <= step ? 'bg-ink border-ink' : 'border-white')}
+                aria-hidden="true"
+              />
+            </li>
+          ))}
+        </ol>
+      </header>
 
-        <div className="p-6 sm:p-8 md:p-10">
-          <AnimatePresence mode="wait">
-            {/* STEP 1: Exam & Attempt */}
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
-                    Step 1: Target Exam & Background
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-1">
-                    PrepSaathi configures your syllabus topics and peer squad based on your exam.
-                  </p>
-                </div>
+      <main className="flex-1 w-full max-w-xl mx-auto px-5 py-7">
+        {step === 1 && (
+          <>
+            <h1 className="text-[1.75rem] leading-tight font-bold mb-5">{t('Which exam are you preparing for?')}</h1>
 
-                <div>
-                  <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2.5">
-                    Select Exam
+            <fieldset className="mb-6">
+              <legend className="sr-only">{t('Exam')}</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {EXAMS.map((name) => (
+                  <label
+                    key={name}
+                    className={cx(
+                      'flex items-center gap-2.5 min-h-12 px-3 rounded-sheet border font-medium transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink',
+                      exam === name ? 'border-ink' : 'border-line hover:border-print'
+                    )}
+                  >
+                    <input type="radio" name="exam" className="sr-only" checked={exam === name} onChange={() => setExam(name)} />
+                    <Bubble filled={exam === name} size={20} />
+                    {name}
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {EXAMS.map((item) => (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        key={item}
-                        type="button"
-                        onClick={() => setExam(item)}
-                        className={`p-3.5 rounded-xl border text-xs font-bold text-left transition cursor-pointer ${
-                          exam === item
-                            ? 'border-blue bg-blue/10 text-blue ring-1 ring-blue'
-                            : 'border-slate-200 bg-white text-navy hover:border-slate-300 hover:bg-slate-50'
-                        }`}
+                ))}
+              </div>
+            </fieldset>
+
+            <div className="mb-5">
+              <div className="font-medium mb-1.5">{t('Which attempt is this?')}</div>
+              <Segmented label={t('Which attempt is this?')} value={attempt} onChange={setAttempt} options={ATTEMPTS} />
+            </div>
+
+            <label className="block mb-7">
+              <span className="block font-medium mb-1.5">{t('Where do you live?')}</span>
+              <select className={inputClass} value={cityTier} onChange={(e) => setCityTier(e.target.value)}>
+                {CITY_TIERS.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {t(c.label)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <Button className="w-full sm:w-auto" disabled={!exam} onClick={() => setStep(2)}>
+              {t('Continue')}
+              <ArrowRight size={18} aria-hidden="true" />
+            </Button>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <h1 className="text-[1.75rem] leading-tight font-bold mb-5">{t('Set your daily target')}</h1>
+
+            <label className="block mb-7">
+              <span className="flex items-baseline justify-between mb-1.5">
+                <span className="font-medium">{t('Hours you plan to study each day')}</span>
+                <span className="text-[1.75rem] leading-none font-bold">{t('{n}h', { n: target })}</span>
+              </span>
+              <input
+                type="range"
+                className="w-full h-8"
+                min={2}
+                max={12}
+                step={0.5}
+                value={target}
+                onChange={(e) => setTarget(Number(e.target.value))}
+              />
+            </label>
+
+            <fieldset className="mb-6">
+              <legend className="font-medium mb-1">{t('Pick up to 3 subjects you find hardest')}</legend>
+              <p className="text-sm text-ink-soft mb-3">
+                {t('These start at 30% and everything else at 60%. Your quiz results replace these starting scores.')}
+              </p>
+
+              {subjects.error ? (
+                <ErrorState error={subjects.error} onRetry={subjects.refetch} />
+              ) : subjects.isLoading ? (
+                <div className="flex flex-col gap-2">
+                  {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {(subjects.data ?? []).map((subject) => {
+                    const selected = weak.includes(subject);
+                    const blocked = !selected && weak.length >= 3;
+                    return (
+                      <label
+                        key={subject}
+                        className={cx(
+                          'flex items-center gap-2.5 min-h-12 px-3 rounded-sheet border font-medium transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink',
+                          selected ? 'border-ink' : 'border-line',
+                          blocked ? 'opacity-50' : 'hover:border-print'
+                        )}
                       >
-                        {item}
-                      </motion.button>
-                    ))}
-                  </div>
+                        <input type="checkbox" className="sr-only" checked={selected} disabled={blocked} onChange={() => toggleWeak(subject)} />
+                        <Bubble filled={selected} size={20} />
+                        {subject}
+                      </label>
+                    );
+                  })}
                 </div>
+              )}
+            </fieldset>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2">
-                      Attempt Number
-                    </label>
-                    <div className="flex gap-2">
-                      {[1, 2, 3, 4].map((num) => (
-                        <button
-                          key={num}
-                          type="button"
-                          onClick={() => setAttemptNumber(num)}
-                          className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                            attemptNumber === num
-                              ? 'bg-navy text-white border-navy'
-                              : 'border-slate-200 bg-white text-navy hover:bg-slate-50'
-                          }`}
-                        >
-                          {num === 1 ? '1st' : num === 2 ? '2nd' : num === 3 ? '3rd' : '4+'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+            {saveFailed && <Notice tone="error" className="mb-4">{t('Could not save your setup. Check your connection and try again.')}</Notice>}
 
-                  <div>
-                    <label className="block text-xs font-semibold text-navy uppercase tracking-wider mb-2">
-                      City Location (Tier)
-                    </label>
-                    <select
-                      value={cityTier}
-                      onChange={(e) => setCityTier(e.target.value)}
-                      className="w-full py-2.5 px-3 rounded-xl border border-slate-300 bg-white text-xs text-navy focus:outline-none focus:ring-2 focus:ring-blue"
-                    >
-                      {CITY_TIERS.map((tier) => (
-                        <option key={tier.value} value={tier.value}>
-                          {tier.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+            <div className="flex gap-2">
+              <Button variant="print" onClick={() => setStep(1)}>
+                <ArrowLeft size={18} aria-hidden="true" />
+                {t('Back')}
+              </Button>
+              <Button disabled={weak.length === 0} loading={saving} onClick={finishSetup}>
+                {t('Continue')}
+                <ArrowRight size={18} aria-hidden="true" />
+              </Button>
+            </div>
+          </>
+        )}
 
-                <div className="pt-4 flex justify-end">
-                  <ClickSpark sparkColor="#2563EB">
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Continue to Daily Target</span>
-                      <ArrowRightIcon size={12} />
-                    </motion.button>
-                  </ClickSpark>
-                </div>
-              </motion.div>
+        {step === 3 && (
+          <>
+            <h1 className="text-[1.75rem] leading-tight font-bold mb-2">{t('You have joined a squad')}</h1>
+            <p className="text-ink-soft mb-5">
+              {t('Up to six {exam} aspirants, shown only as letters. They see whether you checked in and how many hours you logged, never your name or your notes.', { exam })}
+            </p>
+
+            {board.error ? (
+              <ErrorState error={board.error} onRetry={board.refetch} />
+            ) : board.isLoading ? (
+              <Skeleton className="h-28" />
+            ) : (
+              <ul className="border border-line rounded-sheet divide-y divide-line mb-5">
+                {(board.data ?? []).map((m) => (
+                  <li key={m.seat} className="flex items-center gap-3 px-3 min-h-12">
+                    <Bubble size={26} label={m.seat} filled={m.is_me} />
+                    <span className="font-medium">{m.is_me ? t('You') : t('Aspirant {seat}', { seat: m.seat })}</span>
+                    <span className="ml-auto text-sm text-ink-soft">{t('{n} day streak', { n: m.streak })}</span>
+                  </li>
+                ))}
+              </ul>
             )}
 
-            {/* STEP 2: Daily Target Hours & Hardest Subjects */}
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
-                    Step 2: Study Capacity & Diagnostic Baseline
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Pick your target hours and 3 hardest areas. This seeds your baseline mastery so your initial plan is non-generic.
-                  </p>
-                </div>
-
-                {/* Slider */}
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-navy uppercase tracking-wider">
-                      Daily Planned Study Hours
-                    </span>
-                    <span className="text-xl font-extrabold text-blue font-mono">
-                      <NumberTicker value={dailyTargetHrs} decimalPlaces={1} suffix=" hrs/day" />
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={2}
-                    max={12}
-                    step={0.5}
-                    value={dailyTargetHrs}
-                    onChange={(e) => setDailyTargetHrs(parseFloat(e.target.value))}
-                    className="w-full accent-blue cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[11px] text-slate-400 font-medium pt-1">
-                    <span>2 hours (Working Aspirant)</span>
-                    <span>6 hours (Standard Full-Time)</span>
-                    <span>12 hours (Intensive)</span>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-navy uppercase tracking-wider">
-                      Pick 3 Subjects You Find Hardest
-                    </span>
-                    <span
-                      className={`text-xs font-bold ${
-                        weakSubjects.length === 3 ? 'text-emerald-700' : 'text-orange'
-                      }`}
-                    >
-                      {weakSubjects.length} of 3 selected
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mb-3">
-                    Weak topics are seeded at 30% mastery score to force remedial scheduling; others start at 60%.
-                  </p>
-
-                  <div className="space-y-2">
-                    {availableSubjects.map((subj) => {
-                      const isSelected = weakSubjects.includes(subj);
-                      return (
-                        <div
-                          key={subj}
-                          onClick={() => toggleSubject(subj)}
-                          className={`p-3.5 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all ${
-                            isSelected
-                              ? 'border-orange bg-orange/5 text-navy font-bold'
-                              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          <span>{subj}</span>
-                          <span
-                            className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                              isSelected ? 'bg-orange text-white' : 'border border-slate-300'
-                            }`}
-                          >
-                            {isSelected && <CheckIcon size={11} />}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="pt-4 flex items-center justify-between border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="px-4 py-2 rounded-xl border border-slate-300 text-xs text-slate-600 hover:text-navy font-medium cursor-pointer"
-                  >
-                    ← Back
-                  </button>
-                  <ClickSpark sparkColor="#2563EB">
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      type="button"
-                      disabled={weakSubjects.length === 0}
-                      onClick={() => setStep(3)}
-                      className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Continue to Squad Match</span>
-                      <ArrowRightIcon size={12} />
-                    </motion.button>
-                  </ClickSpark>
-                </div>
-              </motion.div>
+            {!board.isLoading && others.length === 0 && (
+              <Notice className="mb-5">
+                {t('You are the first here. New {exam} aspirants join this squad until it has six members.', { exam })}
+              </Notice>
             )}
 
-            {/* STEP 3: Auto-join Squad matching exam */}
-            {step === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-navy tracking-tight">
-                    Step 3: Accountability Squad Match
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-1">
-                    You are being matched into a 6-member cohort of serious {exam} aspirants.
-                  </p>
-                </div>
-
-                {/* Squad Preview Card with BorderBeam */}
-                <SpotlightCard
-                  spotlightColor="rgba(37, 99, 235, 0.08)"
-                  className="p-5 rounded-2xl border border-blue/20 bg-blue/5 space-y-3.5 relative overflow-hidden"
-                >
-                  <BorderBeam size={180} duration={12} colorFrom="#2563EB" colorTo="#60A5FA" />
-
-                  <div className="flex items-center justify-between pb-3 border-b border-blue/15">
-                    <div>
-                      <h3 className="font-bold text-sm text-navy">{squadPreview.name}</h3>
-                      <p className="text-[11px] text-slate-500">Exam: {exam} · 6 members</p>
-                    </div>
-                    <Badge variant="primary">Auto-Matched</Badge>
-                  </div>
-
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Your daily check-in is visible to 5 peers to create healthy social commitment and loss aversion:
-                  </p>
-
-                  <div className="space-y-2">
-                    {squadPreview.members.map((m, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-200 text-xs"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-mono text-[10px] text-navy font-bold">
-                            {String.fromCharCode(65 + idx)}
-                          </span>
-                          <span className="font-semibold text-navy">{m.name}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-orange font-bold flex items-center gap-1">
-                            <FlameIcon size={11} className="text-orange" />
-                            <span>{m.streak}d</span>
-                          </span>
-                          <span className="text-[11px] text-slate-400">{m.status}</span>
-                        </div>
-                      </div>
-                    ))}
-
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-blue/10 border border-blue/30 text-xs font-bold text-blue">
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-6 h-6 rounded-lg bg-blue text-white flex items-center justify-center font-mono text-[10px]">
-                          YOU
-                        </span>
-                        <span>{profile?.name || 'You (New Member)'}</span>
-                      </div>
-                      <span className="text-[11px] text-blue">Starting Day 1</span>
-                    </div>
-                  </div>
-                </SpotlightCard>
-
-                <div className="p-3.5 rounded-xl bg-orange/10 border border-orange/20 text-xs text-orange-950 flex items-center gap-2.5">
-                  <FlagIcon size={16} className="text-orange flex-shrink-0" />
-                  <span className="leading-relaxed">
-                    <strong>Loss aversion active:</strong> If you miss submitting today's study proof by 23:59, a red flag is displayed next to your entry in the squad board.
-                  </span>
-                </div>
-
-                <div className="pt-4 flex items-center justify-between border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="px-4 py-2 rounded-xl border border-slate-300 text-xs text-slate-600 hover:text-navy font-medium cursor-pointer"
-                  >
-                    ← Back
-                  </button>
-                  <ClickSpark sparkColor="#2563EB">
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      type="button"
-                      disabled={submitting}
-                      onClick={handleFinishOnboarding}
-                      className="px-6 py-2.5 rounded-xl bg-blue hover:bg-blue/90 text-white font-bold text-xs shadow-xs transition disabled:opacity-40 flex items-center gap-2 cursor-pointer"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Generating Baseline Plan...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Complete Setup & Open Dashboard</span>
-                          <ArrowRightIcon size={12} />
-                        </>
-                      )}
-                    </motion.button>
-                  </ClickSpark>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+            <Button className="w-full sm:w-auto" onClick={openDashboard}>
+              {t('Open my dashboard')}
+              <ArrowRight size={18} aria-hidden="true" />
+            </Button>
+          </>
+        )}
+      </main>
     </div>
   );
 }

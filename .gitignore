@@ -28,3 +28,10 @@ supabase/.temp/
 *.sw?
 
 .vercel
+
+# Local design tooling output
+.impeccable/mocks/
+.impeccable/questions/
+.impeccable/review/
+
+.env*

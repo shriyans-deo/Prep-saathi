@@ -1,22 +1,22 @@
 {
-  "name": "prep-saathi-app",
+  "name": "prepsaathi",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "test:backend": "node --env-file=.env.local scripts/backend-test.mjs"
   },
   "dependencies": {
+    "@fontsource/hind": "^5.3.0",
     "@supabase/supabase-js": "^2.118.0",
-    "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
-    "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
-    "gsap": "^3.15.0",
-    "motion": "^14.8.0",
+    "lucide-react": "^0.468.0",
     "pdfjs-dist": "^6.4.299",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -26,7 +26,6 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
